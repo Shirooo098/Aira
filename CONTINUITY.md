@@ -1,5 +1,19 @@
 # Continuity
 
+## Ticket #10 — native build unblocked
+
+- 2026-10-10 [USER] Requested build configuration work to unblock #10 APK verification.
+- 2026-10-10 [TOOL] Extended the repeatable setup script to guard Whisper 0.7.4 and use the host AGP when integrated, leaving its AGP 7.2.1 buildscript only for standalone library builds. This clears the duplicate legacy dependency tree without framework/package upgrades.
+- 2026-10-10 [TOOL] Online arm64 debug APK build passed in 9m 38s; offline rebuild passed in 17s. Bundled Latin OCR assets/native pipeline, Whisper libraries/model verified inside APK. Artifact: android/app/build/outputs/apk/debug/app-debug.apk, 160853925 bytes; SHA-256 57520dc733ee10ac570361cd1b17ebfdadfe02a65828a65670a52ce62bc729b8.
+- 2026-10-10 [TOOL] Supersedes the earlier native dependency blocker. Debug build success is not release/device offline acceptance or completion of #10 UI/persistence. No commit/push performed.
+
+## Ticket #10 — dependency repair
+
+- 2026-10-10 [USER] Requested current main pull and fix for missing #10 dependencies.
+- 2026-10-10 [TOOL] Pulled main to 22eefd6 and fast-forwarded feat/#10-gcash-receipt-ocr. Installed pinned @react-native-ml-kit/text-recognition 2.0.0 plus SDK-compatible expo-image-picker/file-system; configured camera/photo plugin and reproducible Android namespace/React dependency compatibility patch. Original Infinite Red candidate was unpublished/incompatible and removed.
+- 2026-10-10 [TOOL] TypeScript, 162 tests, direct dependency resolution and Expo Android prebuild pass. No OCR UI/persistence or phone-quality completion claim; no commit/push requested. See docs/TICKET-10-RECEIPTS.md for remaining work and native verification.
+- 2026-10-10 [TOOL] Android autolinking includes TextRecognitionPackage; regenerated manifest preserves camera and speech permissions; compatibility patch is repeatable. Online APK build stalled and was stopped. Offline arm64 debug build failed configuring existing whisper.rn because Android Gradle plugin 7.2.1 and related Maven artifacts are uncached. APK/OCR runtime acceptance remains unverified.
+
 ## Ticket #19 — review notebook OCR proposals before catalog import
 
 - 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.

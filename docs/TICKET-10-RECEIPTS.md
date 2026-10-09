@@ -1,6 +1,6 @@
 # Ticket #10 — receipt evidence
 
-2026-10-10. Branch: `feat/#10-gcash-receipt-ocr`, based on main `4c02e62`. Main contains #9 via merge `f6709a1` and subsequent ledger/reversal work. This is an in-progress slice, not completed OCR support.
+2026-10-10. Branch: `feat/#10-gcash-receipt-ocr`. Merged current main `312a820` to combine the native dependency/build fix with the receipt UI/persistence implementation already delivered through PR #33. Device OCR and standalone offline acceptance remain separate from implementation and build results.
 
 ## Implemented first slice
 
@@ -9,19 +9,41 @@
 - A full #9 GCash sale can have `paid_centavos=0` from migration defaults: compare full sales with total, and partial-credit sales with their paid amount. Cancelled records preserve evidence/history.
 - Tests exercise proposal ambiguity, masked data, invalid amounts, recipient distinction, pending-state/stock preservation, mismatches and duplicate references against real SQLite.
 
-## Native dependency proposal — approval pending
+## Native dependencies — resolved 2026-10-10
 
-The existing dependency policy is recorded in D4-FOUNDATION-PROPOSAL.md: "Repository instructions require approval before adding material dependencies". No new dependencies have been installed for this slice.
+The user requested fixing #10's missing dependencies. Main was pulled to `22eefd6` and this branch fast-forwarded to it before the fix. This request authorizes the dependency installation. The earlier approval-pending proposal below is superseded by the installed stack.
 
 | Dependency | Purpose and tradeoff |
 |---|---|
-| `@infinitered/react-native-mlkit-text-recognition` (source candidate 6.0.0, with matching core) | Expo module wrapping local OCR. Upstream Gradle declares bundled Latin `com.google.mlkit:text-recognition:16.0.1`. Adds native build/size and compatibility work; cannot run in Expo Go. Verify the published package's Gradle file and Expo 57 build compatibility before claiming bundled readiness. |
-| `expo-image-picker` (SDK 57 compatible version) | Camera and system photo selection. Request camera permission only for capture; cancel/denial must be recoverable. Disable microphone permission for this plugin. |
-| `expo-file-system` (SDK 57 compatible version) | Copy selected images into app-private persistent storage and clean staged images. Adds a direct dependency; cache picker URIs are not durable receipt evidence. |
+| `@react-native-ml-kit/text-recognition` (pinned 2.0.0, MIT) | Published React Native wrapper; installed Gradle declares bundled Latin `com.google.mlkit:text-recognition:16.0.1`. Its Java imports also require bundled Chinese, Devanagari, Japanese and Korean libraries, increasing APK size. Receipt extraction will use Latin. |
+| `expo-image-picker` (~57.0.20, MIT) | SDK-compatible camera/photo selection. Config plugin supplies camera/photo descriptions and Android explicitly declares CAMERA. Existing RECORD_AUDIO is retained for speech: setting microphonePermission false in this plugin globally blocks that permission and breaks speech. Receipt UI must request image media only. |
+| `expo-file-system` (~57.0.7, MIT) | SDK-compatible persistent private image storage; picker cache URIs alone are not durable evidence. |
 
-Use Expo's compatibility resolution for Expo packages; pin the OCR wrapper/core after checking the published artifact, licenses and native dependency graph. Keep current framework versions. A development/release build is required. On first fresh install with no network, OCR must work without a model download.
+The original Infinite Red 6.0.0 source candidate is not published to npm. Its published wrapper 5.0.1/core 3.1.0 references the removed ExpoModulesCorePlugin.gradle and introduces incompatible test-library peers. It was removed; neither package remains in the final dependency graph.
 
-Source inspection supports the proposed choice, not verified Expo 57 compatibility or actual OCR quality. Capture installed versions and license/audit results when dependencies are approved and resolved.
+`scripts/prepare-receipt-ocr.cjs` runs after npm installation and before `npm run receipt:prebuild`: it guards the pinned wrapper version and bundled Latin dependency, adds the Android namespace, removes the old manifest package attribute and replaces dynamic react-native:+ with react-android. The four other script dependencies are retained because the native Java source imports them. No framework upgrades or cloud fallback were added.
+
+Use `npm ci`, `npm run receipt:prebuild`, then `npm run android` and `npm run receipt:start`. Expo Go does not contain this native OCR module; installing JavaScript packages does not add it to an existing APK. Rebuild the development/release app. A fresh-install offline OCR/device check is still required.
+
+Dependency installation, `npm ls` for the three direct packages, TypeScript, 162/162 tests and Android prebuild pass. Expo's version check used its local SDK map because networking was disabled. npm reports 22 advisories (7 moderate, 15 high), the same count as the initial dependency tree; no force upgrade was applied. Native APK compilation and actual OCR accuracy are tracked separately.
+
+Final Android autolinking detects `com.rnmlkit.textrecognition.TextRecognitionPackage`; regenerated manifest retains both CAMERA and RECORD_AUDIO. Patch repeat-run checks and lockfile consistency pass. Initial build attempts stalled or failed on Whisper's uncached AGP 7.2.1 tree. That blocker is resolved by the follow-up configuration below; production OCR remains required to run without network.
+
+### Follow-up build configuration
+
+The setup script now guards Whisper 0.7.4 and restricts its AGP 7.2.1 buildscript to standalone library builds. When integrated with Aira, Whisper inherits the host's Android Gradle plugin instead of resolving a second, older plugin tree. This keeps Expo/RN/Whisper versions unchanged and is reapplied by npm postinstall and receipt:prebuild. Repeat-run checks pass. The online build progressed past configuration and downloaded the actual OCR/Android Maven artifacts.
+
+To compile for the Oppo's arm64 architecture from PowerShell after prebuild:
+
+```powershell
+.\android\gradlew.bat -p android :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --console=plain
+```
+
+The debug APK is `android/app/build/outputs/apk/debug/app-debug.apk`. Debug builds use Metro and are not standalone offline release acceptance. Add `--offline` only after the necessary Maven artifacts are cached; it verifies build-cache completeness, not on-device offline OCR quality.
+
+2026-10-10 final results: online arm64 debug APK build **passed** in 9m 38s; the same command with `--offline` **passed** in 17s (367 tasks, 360 up-to-date). Both Whisper and OCR Java/native integration compiled. APK inspection confirmed bundled Latin ML Kit recognizer assets, `libmlkit_google_ocr_pipeline.so`, Whisper native libraries and `assets/models/whisper.bin`.
+
+Prior dependency-fix artifact: 160,853,925 bytes, SHA-256 `57520dc733ee10ac570361cd1b17ebfdadfe02a65828a65670a52ce62bc729b8`. Local ignored diagnostics: `.scratch/ticket-10-native-build.log` and `.scratch/ticket-10-offline-build.log`. These APK results predate the current-main merge and do not verify the newly integrated receipt UI/persistence. Device OCR accuracy and release/airplane-mode behavior remain outstanding.
 
 ## Image retention and consistency contract for the next slice
 
@@ -35,7 +57,7 @@ Receipt attachment is explicitly reviewed and saved by the owner. Receipt fields
 6. For explicit attachment removal, remove the database link first and then the file. A failed file delete leaves an orphan recoverable on restart. Never delete payment/sale records through receipt removal.
 7. Search the reviewed reference and visible sender fields with bound SQL parameters. Do not reconstruct masked phone digits. Preserve source image comparison in the review screen; no retained raw OCR text is needed after confirmed fields are saved unless explicitly required.
 
-Schema follow-up through D3 conventions: allocate migration after existing v8, reference actual sale/draft IDs, preserve all previous data, and document draft-to-sale transfer. Do not invent replacement transaction tables.
+The integrated persistence slice uses migration 9 after existing v8 and actual sale/draft IDs; draft-to-sale transfer is documented below.
 
 ## Implementation & Verification of Persistence and UI Slice
 
@@ -49,6 +71,7 @@ Schema follow-up through D3 conventions: allocate migration after existing v8, r
 ## Sources
 
 - [Ticket #10](https://github.com/Shirooo098/Aira/issues/10).
+- [Installed alternative wrapper upstream Android build](https://github.com/a7medev/react-native-ml-kit/blob/main/text-recognition/android/build.gradle); installed 2.0.0 artifact was inspected directly and patched as described above.
 - [Wrapper Android Gradle declaration](https://github.com/infinitered/react-native-mlkit/blob/main/modules/react-native-mlkit-text-recognition/android/build.gradle).
 - [Wrapper package metadata](https://github.com/infinitered/react-native-mlkit/blob/main/modules/react-native-mlkit-text-recognition/package.json).
 - [Google bundled/unbundled recognition options](https://developers.google.com/ml-kit/vision/text-recognition/v2/android).
