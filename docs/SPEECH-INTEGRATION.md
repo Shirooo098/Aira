@@ -1,6 +1,6 @@
 # Ticket #2 — offline speech integration
 
-Prepared 2026-10-10. #1 is merged into fetched origin/main at c2fad40. This slice adds capture and an editable transcript in Ask price. It performs no catalog, stock or financial writes. #5 connects reviewed text to alias/price lookup.
+Prepared 2026-10-10. #1 is merged into fetched origin/main at c2fad40. This slice adds capture and an editable transcript in Ask price. It performs no catalog, stock or financial writes. [Ticket #5](TICKET-5-VOICE-PRICE.md) connects explicitly reviewed text to alias/price lookup.
 
 ## Runtime decisions
 
@@ -52,7 +52,7 @@ Verify signing configuration before distribution; generated development signing 
 
 Prepare is an explicit UI action. Hold/release and accessible start/stop controls request permission on capture. Release while permission/start is pending cancels that attempt. Backgrounding, mode unmount and cancellation stop capture/inference; a replacement waits for old resources. Mode cues are skipped while the microphone is active. Permission denial offers Settings and typed input.
 
-Recognized text and owner edits remain separate. `createSpeechSessionController().review()` returns only the current nonblank editable draft; it performs no lookup or save. D2/D1 later consumers can use this contract without schema changes. Cancel/discard clear ephemeral text and in-memory audio.
+Recognized text and owner edits remain separate. `createSpeechSessionController().review()` returns only the current nonblank editable draft and can notify its optional `onReviewedTranscript` consumer. The controller performs no lookup or save itself. Ask price uses this explicit review event to parse a supported question and start the existing catalog lookup. Edits, retry, discard, and backgrounding invalidate the prior voice result. Cancel/discard clear ephemeral text and in-memory audio.
 
 Controller/PCM tests prove software handling. Type checking and Metro export prove JS integration. Only an actual Oppo test proves capture, initialization, Filipino accuracy, RAM, latency and airplane-mode acceptance. The full three-second speech-end-to-visible-price criterion remains #5.
 

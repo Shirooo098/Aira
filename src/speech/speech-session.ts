@@ -45,6 +45,8 @@ export interface SpeechSessionOptions {
   readonly maxDurationMs?: number;
   /** Maximum wait for final transcription after stopping. Defaults to 30 seconds. */
   readonly inferenceTimeoutMs?: number;
+  /** Called only when review() explicitly accepts the current nonblank draft. */
+  readonly onReviewedTranscript?: (text: string) => void;
 }
 
 export interface SpeechSessionController {
@@ -460,7 +462,13 @@ export function createSpeechSessionController(
 
     review() {
       if (state.status !== 'review' || !state.draft.trim()) return null;
-      return state.draft;
+      const transcript = state.draft;
+      try {
+        options.onReviewedTranscript?.(transcript);
+      } catch {
+        // A consumer callback must not change review's result or session state.
+      }
+      return transcript;
     },
 
     async retry() {

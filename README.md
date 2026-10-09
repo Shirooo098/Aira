@@ -10,6 +10,8 @@ See [the alias workflow and acceptance checklist](docs/TICKET-3-ALIASES.md). Ali
 
 Ticket #2 adds offline push-to-talk and an editable transcript through a native Android build. Follow [speech build instructions](docs/SPEECH-INTEGRATION.md) and the [Oppo benchmark checklist](docs/SPEECH-BENCHMARK.md). Expo Go supports catalog and alias testing; Whisper needs an Android development build.
 
+Ticket #5 connects explicitly reviewed Filipino price questions to the catalog and confirmed aliases. The screen shows the reviewed question and extracted product phrase; partial matches and conflicting identities require a product choice before a price appears. See [supported voice commands and pending device acceptance](docs/TICKET-5-VOICE-PRICE.md).
+
 ## Test on the phone with Expo Go
 
 Expo Go is our primary testing workflow for the ticket #1 catalog foundation. Install an Expo Go version compatible with this project's Expo SDK 57 on the Oppo, connect the phone and computer to the same Wi-Fi network, and run:
