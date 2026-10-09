@@ -8,7 +8,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import type { DatabaseSession } from '../db/database.ts';
-import type { ProductWithStock, SalePreview, PendingGcashDraft } from '../types.ts';
+import type {
+  ProductWithStock,
+  SalePreview,
+  PendingGcashDraft,
+  CustomerWithBalance,
+} from '../types.ts';
 import { getAllProductsWithStock } from '../actions/inventory-actions.ts';
 import {
   buildSalePreview,
@@ -18,8 +23,15 @@ import {
   confirmGcashSale,
   cancelPendingGcashDraft,
 } from '../actions/sales-actions.ts';
+import {
+  getCustomers,
+  createCustomer,
+  completeCreditSale,
+  recordOpeningBalance,
+} from '../actions/utang-actions.ts';
 import { parseCentavos, formatCentavos } from '../domain/money.ts';
 import { SaleValidationError, InsufficientStockError } from '../domain/sales.ts';
+import { CustomerValidationError, CreditValidationError } from '../domain/utang.ts';
 import { sellStyles as styles } from './sell-styles.ts';
 
 interface SellViewProps {
@@ -37,10 +49,19 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash' | 'credit'>('cash');
   const [tenderInput, setTenderInput] = useState('');
   const [gcashRefInput, setGcashRefInput] = useState('');
   const [preview, setPreview] = useState<SalePreview | null>(null);
+
+  // Credit / Utang state
+  const [customers, setCustomers] = useState<CustomerWithBalance[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerNote, setNewCustomerNote] = useState('');
+  const [newCustomerOpeningDebt, setNewCustomerOpeningDebt] = useState('');
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [partialPaidInput, setPartialPaidInput] = useState('');
 
   const [pendingDrafts, setPendingDrafts] = useState<PendingGcashDraft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
@@ -49,11 +70,14 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
   const submitInProgress = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<{
-    method: 'cash' | 'gcash';
+    method: 'cash' | 'gcash' | 'credit';
     totalCentavos: number;
     tenderCentavos?: number;
     changeCentavos?: number;
+    paidCentavos?: number;
     referenceNumber?: string | null;
+    customerName?: string;
+    creditCentavos?: number;
     itemCount: number;
   } | null>(null);
 
@@ -85,9 +109,21 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
     }
   };
 
+  const loadCustomers = async () => {
+    try {
+      const custList = await getCustomers(db);
+      setCustomers(custList);
+    } catch (err) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error('[SellView] Error fetching customers:', err);
+      }
+    }
+  };
+
   useEffect(() => {
     loadProducts();
     loadPendingDrafts();
+    loadCustomers();
   }, [db]);
 
   // Recompute preview whenever cart or tender input changes
@@ -163,6 +199,46 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
     setSuccessInfo(null);
     setErrorMessage(null);
     setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const handleCreateCustomer = async () => {
+    if (newCustomerName.trim().length === 0) {
+      setErrorMessage('Kailangan ilagay ang pangalan ng suki');
+      return;
+    }
+    setCreatingCustomer(true);
+    setErrorMessage(null);
+    try {
+      const created = await createCustomer(db, {
+        name: newCustomerName.trim(),
+        note: newCustomerNote.trim().length > 0 ? newCustomerNote.trim() : undefined,
+      });
+
+      if (newCustomerOpeningDebt.trim().length > 0) {
+        try {
+          const openingCentavos = parseCentavos(newCustomerOpeningDebt.trim());
+          if (openingCentavos > 0) {
+            await recordOpeningBalance(db, {
+              customerId: created.id,
+              amountCentavos: openingCentavos,
+              description: 'Previous balance / Dating utang',
+            });
+          }
+        } catch (openingErr) {
+          setErrorMessage(openingErr instanceof Error ? openingErr.message : 'Maling halaga ng dating utang');
+        }
+      }
+
+      await loadCustomers();
+      setSelectedCustomerId(created.id);
+      setNewCustomerName('');
+      setNewCustomerNote('');
+      setNewCustomerOpeningDebt('');
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Hindi nagawa ang customer');
+    } finally {
+      setCreatingCustomer(false);
+    }
   };
 
   const handleCompleteCashSale = async () => {
@@ -243,6 +319,78 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
     }
   };
 
+  const handleCompleteCreditSale = async () => {
+    if (submitInProgress.current || !preview || preview.insufficientStockItems.length > 0) return;
+
+    if (!selectedCustomerId) {
+      setErrorMessage('Pumili ng mamimili / suki para sa utang.');
+      return;
+    }
+
+    submitInProgress.current = true;
+    setSubmitting(true);
+    setErrorMessage(null);
+    setSuccessInfo(null);
+
+    let paidCentavos = 0;
+    if (partialPaidInput.trim().length > 0) {
+      try {
+        paidCentavos = parseCentavos(partialPaidInput);
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : 'Maling halaga ng paunang bayad');
+        submitInProgress.current = false;
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    if (paidCentavos > preview.totalCentavos) {
+      setErrorMessage('Hindi maaaring lumagpas sa kabuuan ang paunang bayad.');
+      submitInProgress.current = false;
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const selectedCust = customers.find((c) => c.id === selectedCustomerId);
+      const res = await completeCreditSale(db, {
+        customerId: selectedCustomerId,
+        items: cart.map((c) => ({ productId: c.product.id, quantity: c.quantity })),
+        paidCentavos,
+        paymentMethod: 'cash',
+      });
+
+      setSuccessInfo({
+        method: 'credit',
+        totalCentavos: res.sale.totalCentavos,
+        paidCentavos: res.sale.paidCentavos,
+        creditCentavos: res.sale.creditCentavos,
+        customerName: selectedCust?.name,
+        itemCount: res.sale.items.length,
+      });
+
+      setCart([]);
+      setPartialPaidInput('');
+      setPreview(null);
+      await loadProducts();
+      await loadCustomers();
+    } catch (err) {
+      if (
+        err instanceof InsufficientStockError ||
+        err instanceof SaleValidationError ||
+        err instanceof CustomerValidationError ||
+        err instanceof CreditValidationError
+      ) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Nagkaroon ng aberya sa pagtatala ng credit sale.');
+      }
+    } finally {
+      submitInProgress.current = false;
+      setSubmitting(false);
+    }
+  };
+
   const handleConfirmPendingDraft = async (draft: PendingGcashDraft) => {
     if (submitInProgress.current) return;
 
@@ -307,6 +455,20 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
       p.unit.toLowerCase().includes(q)
     );
   });
+
+  let parsedPartialCentavos = 0;
+  if (partialPaidInput.trim().length > 0) {
+    try {
+      parsedPartialCentavos = parseCentavos(partialPaidInput);
+    } catch {
+      parsedPartialCentavos = 0;
+    }
+  }
+
+  const creditRemainderCentavos =
+    preview !== null && preview.totalCentavos > parsedPartialCentavos
+      ? preview.totalCentavos - parsedPartialCentavos
+      : 0;
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -505,7 +667,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                     paymentMethod === 'cash' && styles.paymentTabTextActive,
                   ]}
                 >
-                  Bayad sa Cash
+                  Cash
                 </Text>
               </TouchableOpacity>
 
@@ -521,7 +683,23 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                     paymentMethod === 'gcash' && styles.paymentTabTextActive,
                   ]}
                 >
-                  Bayad sa GCash
+                  GCash
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.paymentTab, paymentMethod === 'credit' && styles.paymentTabActive]}
+                onPress={() => setPaymentMethod('credit')}
+                accessibilityRole="button"
+                accessibilityLabel="Pumili ng Utang / Credit"
+              >
+                <Text
+                  style={[
+                    styles.paymentTabText,
+                    paymentMethod === 'credit' && styles.paymentTabTextActive,
+                  ]}
+                >
+                  Utang
                 </Text>
               </TouchableOpacity>
             </View>
@@ -534,7 +712,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                   <Text style={styles.totalValue}>{formatCentavos(preview.totalCentavos)}</Text>
                 </View>
 
-                {paymentMethod === 'cash' ? (
+                {paymentMethod === 'cash' && (
                   <>
                     <View style={styles.tenderSection}>
                       <Text style={styles.fieldLabel}>Natanggap na Bayad (₱):</Text>
@@ -560,7 +738,9 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                       </View>
                     )}
                   </>
-                ) : (
+                )}
+
+                {paymentMethod === 'gcash' && (
                   <View style={styles.tenderSection}>
                     <Text style={styles.fieldLabel}>GCash Reference # (Opsyonal):</Text>
                     <TextInput
@@ -575,6 +755,114 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                       editable={!submitting}
                       accessibilityLabel="GCash Reference number"
                     />
+                  </View>
+                )}
+
+                {paymentMethod === 'credit' && (
+                  <View style={styles.customerSection}>
+                    <Text style={styles.fieldLabel}>Pumili ng Suki / Mamimili *</Text>
+
+                    {customers.length === 0 ? (
+                      <Text style={styles.emptyText}>Wala pang nakatalang suki. Magdagdag sa ibaba.</Text>
+                    ) : (
+                      <ScrollView style={styles.customerList} nestedScrollEnabled={true}>
+                        {customers.map((c) => {
+                          const isSelected = selectedCustomerId === c.id;
+                          return (
+                            <TouchableOpacity
+                              key={c.id}
+                              style={[styles.customerItem, isSelected && styles.customerItemSelected]}
+                              onPress={() => setSelectedCustomerId(c.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Piliin si ${c.name}`}
+                            >
+                              <View>
+                                <Text style={styles.customerName}>{c.name}</Text>
+                                {c.note ? <Text style={styles.customerNote}>{c.note}</Text> : null}
+                              </View>
+                              <Text style={styles.customerDebt}>
+                                Utang: {formatCentavos(c.totalDebtCentavos)}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    )}
+
+                    {/* Quick Add Customer */}
+                    <View style={{ marginTop: 8 }}>
+                      <View style={styles.newCustomerRow}>
+                        <TextInput
+                          style={styles.newCustomerInput}
+                          placeholder="Bagong Suki (hal. Mang Jose)"
+                          placeholderTextColor="#9ca3af"
+                          value={newCustomerName}
+                          onChangeText={setNewCustomerName}
+                          editable={!creatingCustomer}
+                        />
+                        <TextInput
+                          style={styles.newCustomerInput}
+                          placeholder="Tala (hal. tapat ng tindahan)"
+                          placeholderTextColor="#9ca3af"
+                          value={newCustomerNote}
+                          onChangeText={setNewCustomerNote}
+                          editable={!creatingCustomer}
+                        />
+                      </View>
+                      <View style={[styles.newCustomerRow, { marginTop: 6 }]}>
+                        <TextInput
+                          style={styles.newCustomerInput}
+                          placeholder="Dating utang sa ₱ (opsyonal)"
+                          placeholderTextColor="#9ca3af"
+                          value={newCustomerOpeningDebt}
+                          onChangeText={setNewCustomerOpeningDebt}
+                          keyboardType="decimal-pad"
+                          editable={!creatingCustomer}
+                        />
+                        <TouchableOpacity
+                          style={styles.newCustomerBtn}
+                          onPress={handleCreateCustomer}
+                          disabled={creatingCustomer}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.newCustomerBtnText}>+ Suki</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Partial Payment Input */}
+                    <View style={[styles.tenderSection, { marginTop: 14 }]}>
+                      <Text style={styles.fieldLabel}>Paunang Bayad / Downpayment sa Piso (₱):</Text>
+                      <TextInput
+                        style={styles.tenderInput}
+                        placeholder="hal. 0 kung walang bayad, o 20"
+                        placeholderTextColor="#9ca3af"
+                        value={partialPaidInput}
+                        onChangeText={(v) => {
+                          setPartialPaidInput(v);
+                          setErrorMessage(null);
+                        }}
+                        keyboardType="decimal-pad"
+                        editable={!submitting}
+                        accessibilityLabel="Paunang bayad sa utang"
+                      />
+                    </View>
+
+                    {/* Credit Breakdown Preview */}
+                    <View style={styles.creditBreakdown}>
+                      <View style={styles.creditBreakdownRow}>
+                        <Text style={styles.creditBreakdownLabel}>Bayad ngayon:</Text>
+                        <Text style={styles.creditBreakdownValue}>
+                          {formatCentavos(parsedPartialCentavos)}
+                        </Text>
+                      </View>
+                      <View style={styles.creditBreakdownRow}>
+                        <Text style={styles.creditBreakdownLabel}>Maitatalang Utang:</Text>
+                        <Text style={[styles.creditBreakdownValue, { fontSize: 16 }]}>
+                          {formatCentavos(creditRemainderCentavos)}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 )}
               </View>
@@ -598,7 +886,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
             )}
 
             {/* Confirm or Draft Buttons */}
-            {paymentMethod === 'cash' ? (
+            {paymentMethod === 'cash' && (
               <TouchableOpacity
                 style={[
                   styles.confirmButton,
@@ -615,7 +903,9 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                   <Text style={styles.confirmButtonText}>Kumpirmahin ang Cash Sale</Text>
                 )}
               </TouchableOpacity>
-            ) : (
+            )}
+
+            {paymentMethod === 'gcash' && (
               <TouchableOpacity
                 style={[
                   styles.confirmButton,
@@ -634,6 +924,34 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                 )}
               </TouchableOpacity>
             )}
+
+            {paymentMethod === 'credit' && (
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  (!preview ||
+                    !selectedCustomerId ||
+                    preview.insufficientStockItems.length > 0 ||
+                    submitting) &&
+                    styles.confirmButtonDisabled,
+                ]}
+                onPress={handleCompleteCreditSale}
+                disabled={
+                  !preview ||
+                  !selectedCustomerId ||
+                  preview.insufficientStockItems.length > 0 ||
+                  submitting
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Kumpirmahin ang Utang Sale"
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Kumpirmahin ang Utang Sale</Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -641,15 +959,24 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
         {successInfo && (
           <View style={styles.successBox} accessibilityRole="alert">
             <Text style={styles.successTitle}>
-              Matagumpay na naitala ang {successInfo.method === 'cash' ? 'Cash' : 'GCash'} benta!
+              Matagumpay na naitala ang{' '}
+              {successInfo.method === 'cash'
+                ? 'Cash'
+                : successInfo.method === 'gcash'
+                ? 'GCash'
+                : 'Utang'}{' '}
+              benta!
             </Text>
             <Text style={styles.successDetail}>
               Kabuuan: {formatCentavos(successInfo.totalCentavos)}
-              {successInfo.method === 'cash'
-                ? ` • Bayad: ${formatCentavos(successInfo.tenderCentavos ?? 0)} • Sukli: ${formatCentavos(successInfo.changeCentavos ?? 0)}`
-                : successInfo.referenceNumber
-                ? ` • Ref #: ${successInfo.referenceNumber}`
-                : ' • GCash Kumpirmado'}
+              {successInfo.method === 'cash' &&
+                ` • Bayad: ${formatCentavos(successInfo.tenderCentavos ?? 0)} • Sukli: ${formatCentavos(successInfo.changeCentavos ?? 0)}`}
+              {successInfo.method === 'gcash' &&
+                (successInfo.referenceNumber
+                  ? ` • Ref #: ${successInfo.referenceNumber}`
+                  : ' • GCash Kumpirmado')}
+              {successInfo.method === 'credit' &&
+                ` • Suki: ${successInfo.customerName} • Naitalang Utang: ${formatCentavos(successInfo.creditCentavos ?? 0)}`}
             </Text>
           </View>
         )}

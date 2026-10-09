@@ -107,6 +107,42 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 5,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE customers (
+          id TEXT PRIMARY KEY NOT NULL,
+          name TEXT NOT NULL,
+          nickname TEXT,
+          note TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_customers_name ON customers (name);
+
+        ALTER TABLE sales ADD COLUMN customer_id TEXT REFERENCES customers(id);
+        ALTER TABLE sales ADD COLUMN paid_centavos INTEGER NOT NULL DEFAULT 0 CHECK (typeof(paid_centavos) = 'integer' AND paid_centavos >= 0);
+        ALTER TABLE sales ADD COLUMN credit_centavos INTEGER NOT NULL DEFAULT 0 CHECK (typeof(credit_centavos) = 'integer' AND credit_centavos >= 0);
+
+        CREATE TABLE credit_entries (
+          id TEXT PRIMARY KEY NOT NULL,
+          customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+          entry_type TEXT NOT NULL CHECK (entry_type IN ('sale_credit', 'opening_balance')),
+          sale_id TEXT REFERENCES sales(id),
+          original_amount_centavos INTEGER NOT NULL CHECK (typeof(original_amount_centavos) = 'integer' AND original_amount_centavos > 0),
+          remaining_amount_centavos INTEGER NOT NULL CHECK (typeof(remaining_amount_centavos) = 'integer' AND remaining_amount_centavos >= 0 AND remaining_amount_centavos <= original_amount_centavos),
+          description TEXT,
+          original_date TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_credit_entries_customer ON credit_entries (customer_id, created_at ASC);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {
