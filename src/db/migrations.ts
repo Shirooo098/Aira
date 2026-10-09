@@ -143,6 +143,36 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 6,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE credit_repayments (
+          id TEXT PRIMARY KEY NOT NULL,
+          customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+          amount_centavos INTEGER NOT NULL CHECK (typeof(amount_centavos) = 'integer' AND amount_centavos > 0),
+          payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'gcash')),
+          reference_number TEXT,
+          note TEXT,
+          idempotency_key TEXT UNIQUE,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_credit_repayments_customer ON credit_repayments (customer_id, created_at DESC);
+
+        CREATE TABLE repayment_allocations (
+          id TEXT PRIMARY KEY NOT NULL,
+          repayment_id TEXT NOT NULL REFERENCES credit_repayments(id) ON DELETE CASCADE,
+          credit_entry_id TEXT NOT NULL REFERENCES credit_entries(id) ON DELETE RESTRICT,
+          allocated_centavos INTEGER NOT NULL CHECK (typeof(allocated_centavos) = 'integer' AND allocated_centavos > 0),
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_repayment_allocations_repayment ON repayment_allocations (repayment_id);
+        CREATE INDEX idx_repayment_allocations_entry ON repayment_allocations (credit_entry_id);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {

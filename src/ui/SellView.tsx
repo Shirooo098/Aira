@@ -32,6 +32,7 @@ import {
 import { parseCentavos, formatCentavos } from '../domain/money.ts';
 import { SaleValidationError, InsufficientStockError } from '../domain/sales.ts';
 import { CustomerValidationError, CreditValidationError } from '../domain/utang.ts';
+import { RepaymentModal } from './RepaymentModal.tsx';
 import { sellStyles as styles } from './sell-styles.ts';
 
 interface SellViewProps {
@@ -62,6 +63,8 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
   const [newCustomerOpeningDebt, setNewCustomerOpeningDebt] = useState('');
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [partialPaidInput, setPartialPaidInput] = useState('');
+  const [repayCustomer, setRepayCustomer] = useState<CustomerWithBalance | null>(null);
+  const [repayModalVisible, setRepayModalVisible] = useState(false);
 
   const [pendingDrafts, setPendingDrafts] = useState<PendingGcashDraft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
@@ -780,9 +783,25 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                                 <Text style={styles.customerName}>{c.name}</Text>
                                 {c.note ? <Text style={styles.customerNote}>{c.note}</Text> : null}
                               </View>
-                              <Text style={styles.customerDebt}>
-                                Utang: {formatCentavos(c.totalDebtCentavos)}
-                              </Text>
+                              <View style={styles.customerDebtContainer}>
+                                <Text style={styles.customerDebt}>
+                                  Utang: {formatCentavos(c.totalDebtCentavos)}
+                                </Text>
+                                {c.totalDebtCentavos > 0 && (
+                                  <TouchableOpacity
+                                    style={styles.repayButton}
+                                    onPress={(e) => {
+                                      e.stopPropagation?.();
+                                      setRepayCustomer(c);
+                                      setRepayModalVisible(true);
+                                    }}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Magbayad ng utang para kay ${c.name}`}
+                                  >
+                                    <Text style={styles.repayButtonText}>Magbayad</Text>
+                                  </TouchableOpacity>
+                                )}
+                              </View>
                             </TouchableOpacity>
                           );
                         })}
@@ -981,6 +1000,21 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
           </View>
         )}
       </View>
+
+      <RepaymentModal
+        db={db}
+        customer={repayCustomer}
+        visible={repayModalVisible}
+        onClose={() => {
+          setRepayModalVisible(false);
+          setRepayCustomer(null);
+        }}
+        onSuccess={() => {
+          loadCustomers();
+          setSuccessInfo(null);
+          setErrorMessage(null);
+        }}
+      />
     </ScrollView>
   );
 }

@@ -450,6 +450,21 @@ export const sellStyles = StyleSheet.create({
     fontWeight: '700',
     color: '#b91c1c',
   },
+  customerDebtContainer: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  repayButton: {
+    backgroundColor: '#0284c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  repayButtonText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
   newCustomerRow: {
     flexDirection: 'row',
     gap: 8,
