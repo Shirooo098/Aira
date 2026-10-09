@@ -165,15 +165,18 @@ export const manageProductsStyles = StyleSheet.create({
     marginTop: 4,
   },
   productRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
+  productHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   productInfo: {
     flex: 1,
+    marginRight: 10,
   },
   itemTitle: {
     fontSize: 16,
@@ -189,6 +192,65 @@ export const manageProductsStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#0284c7',
-    marginLeft: 12,
+  },
+  stockBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  stockBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  stockBadgePresent: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  stockBadgeTextPresent: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  stockBadgeUncounted: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  stockBadgeTextUncounted: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  productActionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  actionChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#f8fafc',
+  },
+  actionChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  actionChipPrimary: {
+    borderColor: '#bae6fd',
+    backgroundColor: '#f0f9ff',
+  },
+  actionChipPrimaryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0284c7',
   },
 });
+

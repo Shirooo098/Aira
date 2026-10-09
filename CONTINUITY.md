@@ -3,11 +3,12 @@
 ## Snapshot
 - 2026-10-10 [USER] Goal: implement D4 tickets using astra-orchestrator and implement skills.
 - 2026-10-10 [TOOL] Ticket #1 ("Create an offline catalog and typed price lookup") implementation and full verification complete.
-- 2026-10-10 [TOOL] Verification: 16/16 automated tests pass, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (645 modules).
-- 2026-10-10 [TOOL] Documentation: Quantity and selling-unit conventions documented in `docs/QUANTITY-UNITS.md` before D3 stock work (#4); dependency notes in `docs/DEPENDENCY-NOTES.md`; device checklist in `docs/ANDROID-ACCEPTANCE.md`.
-- 2026-10-10 [TOOL] Review: Independent reviewer subagent confirmed full compliance with non-negotiable invariants (strict offline, integer centavos, guarded review, atomic SQLite migrations) and Ticket #1 acceptance criteria.
-- 2026-10-10 [USER] Expo Go is primary foundation phone-testing workflow; follow README.md. No commits/pushes performed without user request.
-- 2026-10-10 [TOOL] Next: User phone test via Expo Go, followed by on-device offline acceptance or proceeding to dependent/ready frontier tickets when unblocked.
+- 2026-10-10 [USER] User switched role to Developer 3 ("D3 — Transactions, Inventory & Utang Ledger / Data Coordinator") and requested ticket implementation.
+- 2026-10-10 [TOOL] Created feature branch `feat/#4-stock-counts-deliveries` on the unblocked frontier for Ticket #4 ("Set stock counts and record deliveries").
+- 2026-10-10 [TOOL] Ticket #4 implementation complete: Migration v2 (`stock_levels`, `inventory_movements`), domain validation (`src/domain/inventory.ts`), action layer (`src/actions/inventory-actions.ts`, `updateProductPrice`), full UI slice with live before/after previews and confirmation (`StockActionModal.tsx`, `ManageProductsView.tsx`).
+- 2026-10-10 [TOOL] Verification: 26/26 automated tests pass, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (649 modules).
+- 2026-10-10 [TOOL] Review: Independent reviewer subagent gave a clean PASS verdict verifying full compliance with non-negotiable invariants (strict offline, integer centavos, uncounted stock is null, price edits leave stock untouched, atomic SQLite migrations with rollback) and Ticket #4 acceptance criteria.
+
 
 ## Done
 - 2026-10-09 [USER] Confirmed broad product: catalog/aliases, voice/text, reviewed sales/stock, GCash receipt OCR, utang and aging, dashboard periods, guarded reporting/restock agent.
