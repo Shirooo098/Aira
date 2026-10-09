@@ -14,6 +14,8 @@ Ticket #2 adds offline push-to-talk and an editable transcript through a native 
 
 Ticket #5 connects explicitly reviewed Filipino price questions to the catalog and confirmed aliases. The screen shows the reviewed question and extracted product phrase; partial matches and conflicting identities require a product choice before a price appears. See [supported voice commands and pending device acceptance](docs/TICKET-5-VOICE-PRICE.md).
 
+Ticket #8 adds **Idikta ang order / itama ang dami** in Sell. Review spoken or typed orders, choose unresolved products and quantities, and apply the proposed cart change. Checkout remains a separate confirmation. See [spoken cart examples, interruption rules, and phone checks](docs/TICKET-8-SPOKEN-CART.md).
+
 ## Test on the phone with Expo Go
 
 Expo Go is our primary testing workflow for the ticket #1 catalog foundation. Install an Expo Go version compatible with this project's Expo SDK 57 on the Oppo, connect the phone and computer to the same Wi-Fi network, and run:
