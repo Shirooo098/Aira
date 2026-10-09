@@ -12,6 +12,11 @@ import { createSpeechSessionController, type SpeechSessionState } from '../speec
 import { createWhisperAdapter } from '../speech/whisper-adapter.ts';
 import { speechTranscriptStyles as styles } from './speech-transcript-styles.ts';
 
+interface SpeechTranscriptInputProps {
+  onReviewedTranscript?: (text: string) => void;
+  onTranscriptInvalidated?: () => void;
+}
+
 function errorMessage(state: SpeechSessionState): string | null {
   const error = state.error;
   if (!error) return null;
@@ -33,9 +38,25 @@ function errorMessage(state: SpeechSessionState): string | null {
   return error.message;
 }
 
-export function SpeechTranscriptInput(): React.JSX.Element {
+export function SpeechTranscriptInput({
+  onReviewedTranscript,
+  onTranscriptInvalidated,
+}: SpeechTranscriptInputProps): React.JSX.Element {
   const adapter = useMemo(() => createWhisperAdapter(), []);
-  const session = useMemo(() => createSpeechSessionController(adapter), [adapter]);
+  const onReviewedTranscriptRef = useRef(onReviewedTranscript);
+  const onTranscriptInvalidatedRef = useRef(onTranscriptInvalidated);
+  onReviewedTranscriptRef.current = onReviewedTranscript;
+  onTranscriptInvalidatedRef.current = onTranscriptInvalidated;
+  const invalidateTranscript = () => {
+    try {
+      onTranscriptInvalidatedRef.current?.();
+    } catch {
+      // A consumer callback must not interrupt capture cleanup or startup.
+    }
+  };
+  const session = useMemo(() => createSpeechSessionController(adapter, {
+    onReviewedTranscript: (text) => onReviewedTranscriptRef.current?.(text),
+  }), [adapter]);
   const [state, setState] = useState<SpeechSessionState>(() => session.getState());
   const [reviewedDraft, setReviewedDraft] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState(false);
@@ -58,6 +79,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
         startPending.current = false;
         holdAttempt.current++;
         setReviewedDraft(null);
+        invalidateTranscript();
         void session.cancelForBackground();
       }
     });
@@ -72,6 +94,8 @@ export function SpeechTranscriptInput(): React.JSX.Element {
   const handleHoldStart = () => {
     if (!session.getState().prepared || session.getState().status !== 'ready') return;
 
+    setReviewedDraft(null);
+    invalidateTranscript();
     holdActive.current = true;
     startPending.current = true;
     const attempt = ++holdAttempt.current;
@@ -106,7 +130,6 @@ export function SpeechTranscriptInput(): React.JSX.Element {
 
   const toggleAccessibleCapture = () => {
     const current = session.getState();
-    setReviewedDraft(null);
     if (current.status === 'recording') {
       void session.stop();
     } else if (current.status === 'starting' || current.status === 'preparing') {
@@ -115,6 +138,8 @@ export function SpeechTranscriptInput(): React.JSX.Element {
       holdAttempt.current++;
       void session.cancel();
     } else if (current.status === 'ready' && current.prepared) {
+      setReviewedDraft(null);
+      invalidateTranscript();
       void session.start();
     }
   };
@@ -124,6 +149,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
+    invalidateTranscript();
     void session.cancel();
   };
 
@@ -132,6 +158,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
+    invalidateTranscript();
     void session.retry();
   };
 
@@ -140,6 +167,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
+    invalidateTranscript();
     void session.cancel();
   };
 
@@ -180,7 +208,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
     <View style={styles.container}>
       <Text style={styles.title}>Gamitin ang boses</Text>
       <Text style={styles.description}>
-        Magsalita sa Filipino o Taglish. Mananatiling draft ang transcript at hindi ito awtomatikong maghahanap o magsa-save.
+        Magsalita sa Filipino o Taglish, hal. “Magkano ang Coke?” Suriin muna ang transcript bago hanapin sa catalog; walang awtomatikong sine-save.
       </Text>
 
       <View style={styles.statusRow}>
@@ -298,6 +326,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
             value={state.draft}
             onChangeText={(text) => {
               setReviewedDraft(null);
+              invalidateTranscript();
               session.edit(text);
             }}
             placeholder="Dito lalabas ang transcript"
@@ -310,7 +339,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
 
           {reviewedDraft !== null && reviewedDraft === state.draft ? (
             <Text style={styles.reviewedNotice} accessibilityLiveRegion="polite">
-              Nasuri ang draft. Walang nahanap o na-save.
+              Nasuri ang transcript. Maaari mo pa itong itama o itapon.
             </Text>
           ) : (
             <Pressable

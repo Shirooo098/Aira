@@ -18,6 +18,32 @@ export const askPriceStyles = StyleSheet.create({
     color: '#64748b',
     marginTop: 2,
   },
+  voiceReviewContainer: {
+    backgroundColor: '#f0f9ff',
+    borderColor: '#7dd3fc',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+  },
+  voiceReviewLabel: {
+    color: '#075985',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  voiceReviewText: {
+    color: '#0f172a',
+    fontSize: 15,
+    lineHeight: 21,
+    marginBottom: 10,
+  },
+  voiceCommandError: {
+    color: '#9a3412',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 2,
+  },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -118,7 +144,7 @@ export const askPriceStyles = StyleSheet.create({
   },
   choiceCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
@@ -140,12 +166,6 @@ export const askPriceStyles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
     marginTop: 2,
-  },
-  choicePrice: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0284c7',
-    marginLeft: 12,
   },
   cardUnknown: {
     backgroundColor: '#fffbeb',
