@@ -12,6 +12,13 @@ export class CreditValidationError extends Error {
   }
 }
 
+export class OverpaymentError extends CreditValidationError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OverpaymentError';
+  }
+}
+
 export function validateCustomerName(name: string): string {
   if (typeof name !== 'string') {
     throw new CustomerValidationError('Kailangang maglagay ng pangalan ng suki');
@@ -67,4 +74,67 @@ export function generateCreditEntryId(): string {
   const timestamp = Date.now().toString(36);
   const randomPart = Math.random().toString(36).substring(2, 9);
   return `credit_${timestamp}_${randomPart}`;
+}
+
+export function generateRepaymentId(): string {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 9);
+  return `repay_${timestamp}_${randomPart}`;
+}
+
+export function generateAllocationId(): string {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 9);
+  return `alloc_${timestamp}_${randomPart}`;
+}
+
+export interface SortableCreditEntry {
+  id: string;
+  entryType: 'sale_credit' | 'opening_balance';
+  originalDate?: string | null;
+  createdAt: string;
+  rowid?: number;
+}
+
+/**
+ * Orders unpaid credit entries oldest-first (FIFO) without inventing dates:
+ * 1. Prior balance (opening_balance) entries precede new sale credits.
+ * 2. Undated legacy debts (original_date IS NULL) precede dated opening debts.
+ * 3. Dated opening debts order chronologically by original_date ASC.
+ * 4. Ties in opening debts order by entry creation date (createdAt ASC), rowid, then ID.
+ * 5. Sale credits order chronologically by sale timestamp (createdAt ASC), rowid, then ID.
+ */
+export function compareCreditEntriesOldestFirst(
+  a: SortableCreditEntry,
+  b: SortableCreditEntry
+): number {
+  const aRank = a.entryType === 'opening_balance' ? 0 : 1;
+  const bRank = b.entryType === 'opening_balance' ? 0 : 1;
+  if (aRank !== bRank) {
+    return aRank - bRank;
+  }
+
+  if (a.entryType === 'opening_balance') {
+    const aHasDate = a.originalDate != null && a.originalDate.trim().length > 0;
+    const bHasDate = b.originalDate != null && b.originalDate.trim().length > 0;
+    if (!aHasDate && bHasDate) return -1;
+    if (aHasDate && !bHasDate) return 1;
+    if (aHasDate && bHasDate) {
+      const cmp = a.originalDate!.localeCompare(b.originalDate!);
+      if (cmp !== 0) return cmp;
+    }
+    const createdCmp = a.createdAt.localeCompare(b.createdAt);
+    if (createdCmp !== 0) return createdCmp;
+    if (a.rowid != null && b.rowid != null && a.rowid !== b.rowid) {
+      return a.rowid - b.rowid;
+    }
+    return a.id.localeCompare(b.id);
+  }
+
+  const saleCmp = a.createdAt.localeCompare(b.createdAt);
+  if (saleCmp !== 0) return saleCmp;
+  if (a.rowid != null && b.rowid != null && a.rowid !== b.rowid) {
+    return a.rowid - b.rowid;
+  }
+  return a.id.localeCompare(b.id);
 }

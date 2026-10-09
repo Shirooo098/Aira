@@ -11,16 +11,17 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
 
   await runMigrations(db);
 
-  // Table schema_migrations exists and has versions 1, 2, 3, 4, and 5
+  // Table schema_migrations exists and has versions 1, 2, 3, 4, 5, and 6
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 5);
+  assert.equal(migrationRows.length, 6);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
   assert.equal(migrationRows[2]?.version, 3);
   assert.equal(migrationRows[3]?.version, 4);
   assert.equal(migrationRows[4]?.version, 5);
+  assert.equal(migrationRows[5]?.version, 6);
 
   // Tables exist and can be queried
   const productRows = await db.getAll('SELECT * FROM products;');
@@ -47,12 +48,18 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   const creditRows = await db.getAll('SELECT * FROM credit_entries;');
   assert.equal(creditRows.length, 0);
 
+  const repaymentRows = await db.getAll('SELECT * FROM credit_repayments;');
+  assert.equal(repaymentRows.length, 0);
+
+  const allocationRows = await db.getAll('SELECT * FROM repayment_allocations;');
+  assert.equal(allocationRows.length, 0);
+
   // Re-running migrations is idempotent
   await runMigrations(db);
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 5);
+  assert.equal(secondRunRows.length, 6);
 });
 
 test('the schema rejects fractional and unsafe monetary values', async (t) => {
@@ -220,7 +227,7 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 6);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 7);
 });
 
 test('Migration 5 constraints validate customers, credit_entries, and sales columns', async (t) => {
@@ -293,6 +300,59 @@ test('Migration 5 constraints validate customers, credit_entries, and sales colu
   for (const invalid of [-1, 10.5, 600]) {
     assert.throws(
       () => insertCredit.run('ce5', 'c1', 'opening_balance', null, 500, invalid, null, null),
+      /CHECK constraint/
+    );
+  }
+});
+
+test('Migration 6 constraints validate credit_repayments and repayment_allocations', async (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  const db = new NodeSqliteAdapter(sqlite);
+  await runMigrations(db);
+
+  // Seed customer and credit entry
+  sqlite.exec(`
+    INSERT INTO customers VALUES ('cust_1', 'Aling Nena', NULL, NULL, 'now', 'now');
+    INSERT INTO credit_entries VALUES ('entry_1', 'cust_1', 'opening_balance', NULL, 1000, 1000, 'Utang', NULL, 'now', 'now');
+  `);
+
+  const insertRepayment = sqlite.prepare(`
+    INSERT INTO credit_repayments (
+      id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'now');
+  `);
+
+  // Valid repayment
+  insertRepayment.run('repay_1', 'cust_1', 1000, 'cash', null, 'Bayad utang', null);
+
+  // Invalid amount_centavos on repayment (<= 0, float, non-integer)
+  for (const invalid of [0, -500, 50.5, 'invalid']) {
+    assert.throws(
+      () => insertRepayment.run('repay_invalid', 'cust_1', invalid, 'cash', null, null, null),
+      /CHECK constraint/
+    );
+  }
+
+  // Invalid payment_method on repayment
+  assert.throws(
+    () => insertRepayment.run('repay_bad_method', 'cust_1', 500, 'bitcoin', null, null, null),
+    /CHECK constraint/
+  );
+
+  const insertAlloc = sqlite.prepare(`
+    INSERT INTO repayment_allocations (
+      id, repayment_id, credit_entry_id, allocated_centavos, created_at
+    ) VALUES (?, ?, ?, ?, 'now');
+  `);
+
+  // Valid allocation
+  insertAlloc.run('alloc_1', 'repay_1', 'entry_1', 1000);
+
+  // Invalid allocated_centavos (<= 0, float, non-integer)
+  for (const invalid of [0, -100, 25.5, 'invalid']) {
+    assert.throws(
+      () => insertAlloc.run('alloc_invalid', 'repay_1', 'entry_1', invalid),
       /CHECK constraint/
     );
   }

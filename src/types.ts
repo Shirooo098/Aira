@@ -160,3 +160,49 @@ export interface SalePreview {
   insufficientStockItems: string[];
 }
 
+export type RepaymentMethod = 'cash' | 'gcash';
+
+export interface RepaymentAllocation {
+  id: string;
+  repaymentId: string;
+  creditEntryId: string;
+  allocatedCentavos: number;
+  createdAt: string;
+}
+
+export interface CreditRepayment {
+  id: string;
+  customerId: string;
+  amountCentavos: number;
+  paymentMethod: PaymentMethod;
+  referenceNumber?: string | null;
+  note?: string | null;
+  idempotencyKey?: string | null;
+  createdAt: string;
+  allocations: RepaymentAllocation[];
+}
+
+export interface AllocationItemPreview {
+  creditEntryId: string;
+  entryType: CreditEntryType;
+  saleId?: string | null;
+  description?: string | null;
+  originalDate?: string | null;
+  createdAt: string;
+  currentRemainingCentavos: number;
+  allocatedCentavos: number;
+  newRemainingCentavos: number;
+  isFullySettled: boolean;
+}
+
+export interface RepaymentPreview {
+  customerId: string;
+  customerName: string;
+  currentTotalDebtCentavos: number;
+  repaymentAmountCentavos: number;
+  newTotalDebtCentavos: number;
+  allocations: AllocationItemPreview[];
+  canComplete: boolean;
+  error?: string | null;
+}
+

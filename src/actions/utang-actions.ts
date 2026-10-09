@@ -5,14 +5,23 @@ import type {
   CreditEntry,
   Sale,
   SaleItem,
+  PaymentMethod,
+  CreditRepayment,
+  RepaymentAllocation,
+  RepaymentPreview,
+  AllocationItemPreview,
 } from '../types.ts';
 import {
   CustomerValidationError,
   CreditValidationError,
+  OverpaymentError,
   validateCustomerName,
   validateCentavoAmount,
   generateCustomerId,
   generateCreditEntryId,
+  generateRepaymentId,
+  generateAllocationId,
+  compareCreditEntriesOldestFirst,
 } from '../domain/utang.ts';
 import {
   SaleValidationError,
@@ -23,6 +32,7 @@ import {
   generateSaleItemId,
 } from '../domain/sales.ts';
 import { generateMovementId } from '../domain/inventory.ts';
+import { formatCentavos } from '../domain/money.ts';
 
 interface CustomerRow {
   id: string;
@@ -34,6 +44,7 @@ interface CustomerRow {
 }
 
 interface CreditEntryRow {
+  rowid?: number;
   id: string;
   customer_id: string;
   entry_type: 'sale_credit' | 'opening_balance';
@@ -85,7 +96,53 @@ interface SaleItemRow {
   subtotal_centavos: number;
 }
 
-function mapCreditEntryRow(row: CreditEntryRow): CreditEntry {
+interface CreditRepaymentRow {
+  id: string;
+  customer_id: string;
+  amount_centavos: number;
+  payment_method: 'cash' | 'gcash';
+  reference_number: string | null;
+  note: string | null;
+  idempotency_key: string | null;
+  created_at: string;
+}
+
+interface RepaymentAllocationRow {
+  id: string;
+  repayment_id: string;
+  credit_entry_id: string;
+  allocated_centavos: number;
+  created_at: string;
+}
+
+function mapRepaymentRow(
+  row: CreditRepaymentRow,
+  allocations: RepaymentAllocation[] = []
+): CreditRepayment {
+  return {
+    id: row.id,
+    customerId: row.customer_id,
+    amountCentavos: row.amount_centavos,
+    paymentMethod: row.payment_method,
+    referenceNumber: row.reference_number ?? null,
+    note: row.note ?? null,
+    idempotencyKey: row.idempotency_key ?? null,
+    createdAt: row.created_at,
+    allocations,
+  };
+}
+
+function mapAllocationRow(row: RepaymentAllocationRow): RepaymentAllocation {
+  return {
+    id: row.id,
+    repaymentId: row.repayment_id,
+    creditEntryId: row.credit_entry_id,
+    allocatedCentavos: row.allocated_centavos,
+    createdAt: row.created_at,
+  };
+}
+
+function mapCreditEntryRow(row: CreditEntryRow): CreditEntry & { rowid?: number } {
   return {
     id: row.id,
     customerId: row.customer_id,
@@ -97,6 +154,7 @@ function mapCreditEntryRow(row: CreditEntryRow): CreditEntry {
     originalDate: row.original_date ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    rowid: row.rowid,
   };
 }
 
@@ -593,6 +651,258 @@ export async function completeCreditSale(
   }
 }
 
+export async function previewRepaymentAllocation(
+  db: DatabaseSession,
+  params: { customerId: string; amountCentavos: number }
+): Promise<RepaymentPreview> {
+  const customer = await getCustomerById(db, params.customerId);
+  if (!customer) {
+    throw new CustomerValidationError(`Hindi mahanap ang suki na may ID: ${params.customerId}`);
+  }
+
+  const validatedAmount = validateCentavoAmount(params.amountCentavos, 'halaga ng bayad');
+  if (validatedAmount <= 0) {
+    throw new CreditValidationError('Dapat mas malaki sa ₱0.00 ang ibabayad sa utang');
+  }
+
+  if (customer.totalDebtCentavos === 0) {
+    throw new OverpaymentError(`Walang natitirang utang si ${customer.name}`);
+  }
+
+  if (validatedAmount > customer.totalDebtCentavos) {
+    throw new OverpaymentError(
+      `Sobra ang ibinabayad: ₱${formatCentavos(validatedAmount)} pero ₱${formatCentavos(
+        customer.totalDebtCentavos
+      )} lang ang natitirang utang ni ${customer.name}`
+    );
+  }
+
+  const creditRows = await db.getAll<CreditEntryRow>(
+    `SELECT rowid, id, customer_id, entry_type, sale_id, original_amount_centavos,
+            remaining_amount_centavos, description, original_date, created_at, updated_at
+     FROM credit_entries
+     WHERE customer_id = ? AND remaining_amount_centavos > 0
+     ORDER BY 
+       CASE WHEN entry_type = 'opening_balance' THEN 0 ELSE 1 END ASC,
+       CASE WHEN original_date IS NULL THEN 0 ELSE 1 END ASC,
+       COALESCE(original_date, created_at) ASC,
+       created_at ASC,
+       rowid ASC;`,
+    [params.customerId]
+  );
+
+  const mappedEntries = creditRows.map(mapCreditEntryRow);
+  mappedEntries.sort(compareCreditEntriesOldestFirst);
+
+  let remainingToAllocate = validatedAmount;
+  const allocations: AllocationItemPreview[] = [];
+
+  for (const entry of mappedEntries) {
+    if (remainingToAllocate <= 0) break;
+
+    const allocated = Math.min(remainingToAllocate, entry.remainingAmountCentavos);
+    const newRemaining = entry.remainingAmountCentavos - allocated;
+
+    allocations.push({
+      creditEntryId: entry.id,
+      entryType: entry.entryType,
+      saleId: entry.saleId,
+      description: entry.description,
+      originalDate: entry.originalDate,
+      createdAt: entry.createdAt,
+      currentRemainingCentavos: entry.remainingAmountCentavos,
+      allocatedCentavos: allocated,
+      newRemainingCentavos: newRemaining,
+      isFullySettled: newRemaining === 0,
+    });
+
+    remainingToAllocate -= allocated;
+  }
+
+  return {
+    customerId: customer.id,
+    customerName: customer.name,
+    currentTotalDebtCentavos: customer.totalDebtCentavos,
+    repaymentAmountCentavos: validatedAmount,
+    newTotalDebtCentavos: customer.totalDebtCentavos - validatedAmount,
+    allocations,
+    canComplete: true,
+  };
+}
+
+export async function recordRepayment(
+  db: DatabaseSession,
+  params: {
+    customerId: string;
+    amountCentavos: number;
+    paymentMethod: PaymentMethod;
+    referenceNumber?: string;
+    note?: string;
+    idempotencyKey?: string;
+  }
+): Promise<CreditRepayment> {
+  const validatedAmount = validateCentavoAmount(params.amountCentavos, 'halaga ng bayad');
+  if (validatedAmount <= 0) {
+    throw new CreditValidationError('Dapat mas malaki sa ₱0.00 ang ibabayad sa utang');
+  }
+
+  if (params.paymentMethod !== 'cash' && params.paymentMethod !== 'gcash') {
+    throw new CreditValidationError('Hindi wastong paraan ng pagbabayad (cash o gcash lamang)');
+  }
+
+  // Idempotency check: if key already processed, return existing record without duplicate allocation
+  if (params.idempotencyKey && params.idempotencyKey.trim().length > 0) {
+    const existingRepayment = await db.getFirst<CreditRepaymentRow>(
+      `SELECT id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, created_at
+       FROM credit_repayments
+       WHERE idempotency_key = ?;`,
+      [params.idempotencyKey.trim()]
+    );
+
+    if (existingRepayment) {
+      const allocationRows = await db.getAll<RepaymentAllocationRow>(
+        `SELECT id, repayment_id, credit_entry_id, allocated_centavos, created_at
+         FROM repayment_allocations
+         WHERE repayment_id = ?
+         ORDER BY created_at ASC;`,
+        [existingRepayment.id]
+      );
+      return mapRepaymentRow(existingRepayment, allocationRows.map(mapAllocationRow));
+    }
+  }
+
+  // Preview allocation strictly validates customer, positive amount, and rejects overpayment
+  const preview = await previewRepaymentAllocation(db, {
+    customerId: params.customerId,
+    amountCentavos: validatedAmount,
+  });
+
+  const repaymentId = generateRepaymentId();
+  const now = new Date().toISOString();
+  const refNum = params.referenceNumber?.trim() ? params.referenceNumber.trim() : null;
+  const note = params.note?.trim() ? params.note.trim() : null;
+  const idempotencyKey = params.idempotencyKey?.trim() ? params.idempotencyKey.trim() : null;
+
+  await db.exec('BEGIN IMMEDIATE');
+  try {
+    await db.run(
+      `INSERT INTO credit_repayments (
+         id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+      [
+        repaymentId,
+        params.customerId,
+        validatedAmount,
+        params.paymentMethod,
+        refNum,
+        note,
+        idempotencyKey,
+        now,
+      ]
+    );
+
+    const allocations: RepaymentAllocation[] = [];
+    for (const alloc of preview.allocations) {
+      const allocId = generateAllocationId();
+      await db.run(
+        `INSERT INTO repayment_allocations (
+           id, repayment_id, credit_entry_id, allocated_centavos, created_at
+         ) VALUES (?, ?, ?, ?, ?);`,
+        [allocId, repaymentId, alloc.creditEntryId, alloc.allocatedCentavos, now]
+      );
+
+      // Reduce remaining debt without altering original_date or created_at (preserves debt age)
+      await db.run(
+        `UPDATE credit_entries
+         SET remaining_amount_centavos = remaining_amount_centavos - ?,
+             updated_at = ?
+         WHERE id = ?;`,
+        [alloc.allocatedCentavos, now, alloc.creditEntryId]
+      );
+
+      allocations.push({
+        id: allocId,
+        repaymentId,
+        creditEntryId: alloc.creditEntryId,
+        allocatedCentavos: alloc.allocatedCentavos,
+        createdAt: now,
+      });
+    }
+
+    await db.exec('COMMIT');
+
+    return {
+      id: repaymentId,
+      customerId: params.customerId,
+      amountCentavos: validatedAmount,
+      paymentMethod: params.paymentMethod,
+      referenceNumber: refNum,
+      note,
+      idempotencyKey,
+      createdAt: now,
+      allocations,
+    };
+  } catch (error) {
+    try {
+      await db.exec('ROLLBACK');
+    } catch {
+      // rollback error suppressed
+    }
+    throw error;
+  }
+}
+
+export async function getCustomerRepayments(
+  db: DatabaseSession,
+  customerId: string
+): Promise<CreditRepayment[]> {
+  const repaymentRows = await db.getAll<CreditRepaymentRow>(
+    `SELECT id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, created_at
+     FROM credit_repayments
+     WHERE customer_id = ?
+     ORDER BY created_at DESC;`,
+    [customerId]
+  );
+
+  const result: CreditRepayment[] = [];
+  for (const rRow of repaymentRows) {
+    const allocRows = await db.getAll<RepaymentAllocationRow>(
+      `SELECT id, repayment_id, credit_entry_id, allocated_centavos, created_at
+       FROM repayment_allocations
+       WHERE repayment_id = ?
+       ORDER BY created_at ASC;`,
+      [rRow.id]
+    );
+    result.push(mapRepaymentRow(rRow, allocRows.map(mapAllocationRow)));
+  }
+
+  return result;
+}
+
+export async function getRepaymentById(
+  db: DatabaseSession,
+  repaymentId: string
+): Promise<CreditRepayment | null> {
+  const rRow = await db.getFirst<CreditRepaymentRow>(
+    `SELECT id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, created_at
+     FROM credit_repayments
+     WHERE id = ?;`,
+    [repaymentId]
+  );
+
+  if (!rRow) return null;
+
+  const allocRows = await db.getAll<RepaymentAllocationRow>(
+    `SELECT id, repayment_id, credit_entry_id, allocated_centavos, created_at
+     FROM repayment_allocations
+     WHERE repayment_id = ?
+     ORDER BY created_at ASC;`,
+    [rRow.id]
+  );
+
+  return mapRepaymentRow(rRow, allocRows.map(mapAllocationRow));
+}
+
 export async function getCustomerLedger(
   db: DatabaseSession,
   customerId: string
@@ -600,6 +910,7 @@ export async function getCustomerLedger(
   customer: CustomerWithBalance;
   creditEntries: CreditEntry[];
   sales: Sale[];
+  repayments: CreditRepayment[];
 }> {
   const customer = await getCustomerById(db, customerId);
   if (!customer) {
@@ -633,9 +944,12 @@ export async function getCustomerLedger(
     sales.push(mapSaleRow(sRow, items));
   }
 
+  const repayments = await getCustomerRepayments(db, customerId);
+
   return {
     customer,
     creditEntries,
     sales,
+    repayments,
   };
 }
