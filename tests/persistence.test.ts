@@ -115,3 +115,89 @@ test('persists stock counts, deliveries, and movement history across app restart
   }
 });
 
+test('persists completed cash sale, sale items, and inventory deductions across app restart on real SQLite file', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aira-sale-persistence-'));
+  const dbPath = path.join(tempDir, 'aira.db');
+
+  try {
+    // 1. Initial launch: save product, set initial stock, complete cash sale
+    const syncDb1 = new DatabaseSync(dbPath);
+    const db1 = new NodeSqliteAdapter(syncDb1);
+    await runMigrations(db1);
+
+    const { setStockCount, getStockLevel, getInventoryHistory } = await import(
+      '../src/actions/inventory-actions.ts'
+    );
+    const { completeCashSale, getSaleById, getRecentSales } = await import(
+      '../src/actions/sales-actions.ts'
+    );
+
+    const product = await saveProduct(db1, {
+      name: 'Datu Puti Suka',
+      variant: '350 ml',
+      unit: 'bote',
+      priceCentavos: 1750,
+    });
+
+    await setStockCount(db1, {
+      productId: product.id,
+      newQuantity: 30,
+      note: 'Initial count',
+    });
+
+    const sale = await completeCashSale(db1, {
+      items: [{ productId: product.id, quantity: 4 }],
+      tenderCentavos: 10000,
+      idempotencyKey: 'persist-sale-1',
+    });
+
+    assert.equal(sale.totalCentavos, 7000);
+    assert.equal(sale.changeCentavos, 3000);
+
+    const stockBeforeClose = await getStockLevel(db1, product.id);
+    assert.equal(stockBeforeClose?.quantity, 26);
+
+    syncDb1.close();
+
+    // 2. Restart app: reconnect to SQLite file on disk
+    const syncDb2 = new DatabaseSync(dbPath);
+    const db2 = new NodeSqliteAdapter(syncDb2);
+    await runMigrations(db2);
+
+    // Verify sale and items persisted
+    const loadedSale = await getSaleById(db2, sale.id);
+    assert.notEqual(loadedSale, null);
+    assert.equal(loadedSale?.id, sale.id);
+    assert.equal(loadedSale?.totalCentavos, 7000);
+    assert.equal(loadedSale?.tenderCentavos, 10000);
+    assert.equal(loadedSale?.changeCentavos, 3000);
+    assert.equal(loadedSale?.items.length, 1);
+    assert.equal(loadedSale?.items[0]?.productName, 'Datu Puti Suka');
+    assert.equal(loadedSale?.items[0]?.quantity, 4);
+    assert.equal(loadedSale?.items[0]?.unitPriceCentavos, 1750);
+    assert.equal(loadedSale?.items[0]?.subtotalCentavos, 7000);
+
+    // Verify recent sales
+    const recent = await getRecentSales(db2);
+    assert.equal(recent.length, 1);
+    assert.equal(recent[0]?.id, sale.id);
+
+    // Verify stock remains deducted
+    const stockAfterRestart = await getStockLevel(db2, product.id);
+    assert.equal(stockAfterRestart?.quantity, 26);
+
+    // Verify inventory movement persisted
+    const movements = await getInventoryHistory(db2, product.id);
+    assert.equal(movements.length, 2);
+    assert.equal(movements[0]?.movementType, 'sale_deduction');
+    assert.equal(movements[0]?.quantityDelta, -4);
+    assert.equal(movements[0]?.previousQuantity, 30);
+    assert.equal(movements[0]?.newQuantity, 26);
+
+    syncDb2.close();
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+
