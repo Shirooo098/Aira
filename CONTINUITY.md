@@ -1,5 +1,14 @@
 # Continuity
 
+## Ticket #19 — review notebook OCR proposals before catalog import
+
+- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
+- 2026-10-10 [TOOL] Created feature branch `feat/#19-notebook-ocr`. Conducted handwriting feasibility spike documenting raster photo limitations vs vector Digital Ink strokes in `docs/TICKET-19-NOTEBOOK.md`.
+- 2026-10-10 [TOOL] Built notebook row extraction domain (`src/domain/notebook.ts`) parsing name, variant, unit, and integer centavos with clarification requirements.
+- 2026-10-10 [TOOL] Implemented action layer (`src/actions/notebook-actions.ts`) matching existing catalog products, updating prices while strictly preserving physical `stock_levels`, and deduplicating rescans.
+- 2026-10-10 [TOOL] Created owner review modal (`src/ui/NotebookReviewModal.tsx`) integrated into `ManageProductsView.tsx` with editable fields and price diff banners.
+- 2026-10-10 [TOOL] Verification: 176/176 automated tests passing (`npm test`), `npm run typecheck` passes with 0 errors, and `npx expo export --platform android` bundles cleanly (692 modules).
+
 ## Ticket #10 — attach, extract and find GCash receipts
 
 - 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
