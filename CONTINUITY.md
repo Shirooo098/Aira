@@ -16,12 +16,11 @@
 - 2026-10-10 [TOOL] Ticket #9 implementation complete: Migration v4 (`pending_gcash_drafts` and `reference_number` column on `sales`), transactional drafting and confirmation action layer (`createPendingGcashDraft`, `confirmGcashSale`, `cancelPendingGcashDraft`), and complete UI slice in `SellView.tsx` with payment method toggle (Cash/GCash), owner confirmation banner (anti-screenshot-fraud warning), and pending draft queue.
 - 2026-10-10 [TOOL] Verification: 42/42 automated tests pass across all test suites, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (652 modules).
 - 2026-10-10 [TOOL] Ticket verification and status audit complete across all 20 tickets:
-  - 11 tickets verified CLOSED & merged to main: #1 (catalog/lookup), #2 (offline Whisper), #3 (aliases), #4 (stock/deliveries), #5 (voice price lookup), #6 (dictated catalog), #7 (cash sale/inventory), #9 (owner-confirmed GCash), #11 (credit sales), #12 (oldest-first repayments), #13 (reversals/cancellations).
-  - Ticket #6 closed on GitHub and in `.scratch/tindig/issues/06.md` after verifying merge commit `71e341c` and 157 passing tests.
+  - 12 tickets verified CLOSED & merged to main: #1 (catalog/lookup), #2 (offline Whisper), #3 (aliases), #4 (stock/deliveries), #5 (voice price lookup), #6 (dictated catalog), #7 (cash sale/inventory), #9 (owner-confirmed GCash), #11 (credit sales), #12 (oldest-first repayments), #13 (reversals/cancellations), #14 (aged utang dashboard).
   - 1 ticket IN PROGRESS: #10 (receipt extraction first slice merged to main; native OCR & storage slice pending approval).
-  - 5 tickets UNBLOCKED / READY FOR AGENT: #8 (voice order drafting), #14 (aged utang dashboard), #15 (calendar period reports), #16 (guarded local agent proof), #19 (notebook OCR review).
+  - 4 tickets UNBLOCKED / READY FOR AGENT: #8 (voice order drafting), #15 (calendar period reports), #16 (guarded local agent proof), #19 (notebook OCR review).
   - 3 tickets BLOCKED: #17 (blocked by #15, #16), #18 (blocked by #17), #20 (blocked by #8, #10, #14, #18).
-  - Verification suite: 157/157 tests passing (`npm test`), 0 TypeScript errors (`npm run typecheck`).
+  - Verification suite: 162/162 tests passing (`npm test`), 0 TypeScript errors (`npm run typecheck`).
 
 
 
