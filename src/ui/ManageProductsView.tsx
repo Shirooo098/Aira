@@ -18,6 +18,7 @@ import { StockActionModal, type StockActionModalMode } from './StockActionModal.
 import { AliasReviewModal } from './AliasReviewModal.tsx';
 import { CatalogDictationModal } from './CatalogDictationModal.tsx';
 import { StoreReportsView } from './StoreReportsView.tsx';
+import { NotebookReviewModal } from './NotebookReviewModal.tsx';
 
 interface ManageProductsViewProps {
   db: DatabaseSession;
@@ -42,6 +43,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
   const [activeStockMode, setActiveStockMode] = useState<StockActionModalMode>(null);
   const [aliasProduct, setAliasProduct] = useState<ProductWithStock | null>(null);
   const [catalogDictationOpen, setCatalogDictationOpen] = useState(false);
+  const [notebookModalOpen, setNotebookModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'products' | 'reports'>('products');
 
   const refreshProducts = async () => {
@@ -163,15 +165,24 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
 
       <View style={styles.header}>
         <Text style={styles.title}>Pamahalaan ang mga Produkto</Text>
-        <Text style={styles.subtitle}>Magrehistro ng paninda at suriin bago i-save</Text>
-        <TouchableOpacity
-          style={[styles.saveButton, { flex: 0, alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 18 }]}
-          onPress={() => setCatalogDictationOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Idikta ang pagbabago sa paninda"
-        >
-          <Text style={styles.saveButtonText}>Idikta ang pagbabago</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+          <TouchableOpacity
+            style={[styles.saveButton, { flex: 0, paddingHorizontal: 16 }]}
+            onPress={() => setCatalogDictationOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Idikta ang pagbabago sa paninda"
+          >
+            <Text style={styles.saveButtonText}>🎙️ Idikta ang Paninda</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.saveButton, { flex: 0, backgroundColor: '#0f766e', paddingHorizontal: 16 }]}
+            onPress={() => setNotebookModalOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="I-scan ang notebook ng mga presyo"
+          >
+            <Text style={styles.saveButtonText}>📓 I-scan ang Notebook</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.formCard}>
@@ -453,6 +464,20 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
             setSuccessMessage(message);
             void refreshProducts();
             setCatalogDictationOpen(false);
+          }}
+        />
+      )}
+
+      {notebookModalOpen && (
+        <NotebookReviewModal
+          visible={notebookModalOpen}
+          db={db}
+          onClose={() => setNotebookModalOpen(false)}
+          onApplied={({ updatedCount, createdCount }) => {
+            setSuccessMessage(
+              `Matagumpay na na-apply ang notebook: ${updatedCount} presyo ang binago, ${createdCount} bagong produkto ang naidagdag.`
+            );
+            void refreshProducts();
           }}
         />
       )}
