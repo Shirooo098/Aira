@@ -4,18 +4,18 @@ import { DatabaseSync } from 'node:sqlite';
 import { NodeSqliteAdapter } from '../src/db/node-sqlite-adapter.ts';
 import { runMigrations } from '../src/db/migrations.ts';
 
-test('runMigrations creates schema_migrations, products, stock_levels, inventory_movements, customers, and credit_entries tables', async (t) => {
+test('runMigrations creates schema_migrations, products, stock_levels, inventory_movements, customers, credit_entries, repayments, and product_aliases tables', async (t) => {
   const syncDb = new DatabaseSync(':memory:');
   t.after(() => syncDb.close());
   const db = new NodeSqliteAdapter(syncDb);
 
   await runMigrations(db);
 
-  // Table schema_migrations exists and has versions 1, 2, 3, 4, 5, 6, and 7
+  // Table schema_migrations exists and has versions 1 through 8
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 7);
+  assert.equal(migrationRows.length, 8);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
   assert.equal(migrationRows[2]?.version, 3);
@@ -23,6 +23,8 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   assert.equal(migrationRows[4]?.version, 5);
   assert.equal(migrationRows[5]?.version, 6);
   assert.equal(migrationRows[6]?.version, 7);
+  assert.equal(migrationRows[7]?.version, 8);
+  assert.deepEqual(await db.getAll('SELECT * FROM product_aliases;'), []);
 
   // Tables exist and can be queried
   const productRows = await db.getAll('SELECT * FROM products;');
@@ -60,7 +62,29 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 7);
+  assert.equal(secondRunRows.length, 8);
+});
+
+test('the aliases table rejects blank or oversized aliases and duplicate product mappings', async (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  const db = new NodeSqliteAdapter(sqlite);
+  await runMigrations(db);
+
+  sqlite.exec(`INSERT INTO products VALUES
+    ('p1', 'Coke', '250 ml', 'bote', 1500, 'coke', '250 ml', 'bote', 'now', 'now')`);
+  const insertAlias = sqlite.prepare(
+    'INSERT INTO product_aliases (alias_normalized, product_id, alias_text, created_at) VALUES (?, ?, ?, ?)'
+  );
+
+  assert.throws(() => insertAlias.run('', 'p1', 'Coke maliit', 'now'), /CHECK constraint/);
+  assert.throws(() => insertAlias.run('coke', 'p1', '  ', 'now'), /CHECK constraint/);
+  assert.throws(() => insertAlias.run('x'.repeat(121), 'p1', 'x'.repeat(121), 'now'), /CHECK constraint/);
+  insertAlias.run('coke maliit', 'p1', 'Coke maliit', 'now');
+  assert.throws(
+    () => insertAlias.run('coke maliit', 'p1', 'Coke maliit', 'later'),
+    /UNIQUE constraint/
+  );
 });
 
 test('the schema rejects fractional and unsafe monetary values', async (t) => {
@@ -228,7 +252,7 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 8);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 9);
 });
 
 test('Migration 5 constraints validate customers, credit_entries, and sales columns', async (t) => {
@@ -360,7 +384,7 @@ test('Migration 6 constraints validate credit_repayments and repayment_allocatio
   }
 });
 
-test('Migration 7 constraints validate cancellation and reversal statuses', async (t) => {
+test('Migration 8 constraints validate cancellation and reversal statuses', async (t) => {
   const sqlite = new DatabaseSync(':memory:');
   t.after(() => sqlite.close());
   const db = new NodeSqliteAdapter(sqlite);

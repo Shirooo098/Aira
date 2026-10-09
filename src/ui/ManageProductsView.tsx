@@ -15,6 +15,7 @@ import { parseCentavos, formatCentavos } from '../domain/money.ts';
 import { CatalogValidationError } from '../domain/catalog.ts';
 import { manageProductsStyles as styles } from './manage-products-styles.ts';
 import { StockActionModal, type StockActionModalMode } from './StockActionModal.tsx';
+import { AliasReviewModal } from './AliasReviewModal.tsx';
 
 interface ManageProductsViewProps {
   db: DatabaseSession;
@@ -37,6 +38,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
 
   const [selectedProduct, setSelectedProduct] = useState<ProductWithStock | null>(null);
   const [activeStockMode, setActiveStockMode] = useState<StockActionModalMode>(null);
+  const [aliasProduct, setAliasProduct] = useState<ProductWithStock | null>(null);
 
   const refreshProducts = async () => {
     setLoadingList(true);
@@ -361,6 +363,15 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
                 >
                   <Text style={styles.actionChipText}>Kasaysayan</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionChip, styles.actionChipPrimary]}
+                  onPress={() => setAliasProduct(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Magdagdag ng bansag para sa ${item.name}, ${item.variant}, ${item.unit}`}
+                >
+                  <Text style={styles.actionChipPrimaryText}>Bansag</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))
@@ -380,6 +391,19 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
           refreshProducts();
         }}
       />
+
+      {aliasProduct && (
+        <AliasReviewModal
+          key={aliasProduct.id}
+          db={db}
+          product={aliasProduct}
+          onClose={() => setAliasProduct(null)}
+          onSuccess={(msg) => {
+            setSuccessMessage(msg);
+            setAliasProduct(null);
+          }}
+        />
+      )}
     </ScrollView>
   );
 }

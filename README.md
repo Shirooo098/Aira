@@ -4,7 +4,11 @@ Artificial Intelligence for Retail Assistance — an offline, Filipino-speaking 
 
 Framework: Expo with React Native and TypeScript. Development and phone testing: Expo Go.
 
-This foundation implements ticket #1: owner-reviewed catalog entry and typed price lookup. Sales, stock, aliases, speech, OCR and utang belong to later tickets. The Sell mode is visible but does not process transactions.
+The app includes catalog and typed price lookup (#1), owner-confirmed aliases (#3), inventory (#4), cash and GCash sales (#7/#9), and customer credit and repayments (#11/#12). For aliases, open Pamahalaan, tap Bansag on a product, review the exact variant/unit, and explicitly confirm. Approved nicknames work in Alamin ang Presyo; conflicting mappings show product choices.
+
+See [the alias workflow and acceptance checklist](docs/TICKET-3-ALIASES.md). Alias behavior does not require Qwen or a desktop model server.
+
+Ticket #2 adds offline push-to-talk and an editable transcript through a native Android build. Follow [speech build instructions](docs/SPEECH-INTEGRATION.md) and the [Oppo benchmark checklist](docs/SPEECH-BENCHMARK.md). Expo Go supports catalog and alias testing; Whisper needs an Android development build.
 
 ## Test on the phone with Expo Go
 

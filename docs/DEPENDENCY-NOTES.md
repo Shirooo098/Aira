@@ -1,5 +1,11 @@
 # Foundation dependency notes
 
+## Ticket #2 additions
+
+2026-10-10 [USER] Requested implementation of bundled Whisper speech. Added pinned whisper.rn 0.7.4 (MIT) and buffer 6.0.3 (MIT, required by Whisper's safe-buffer import for Metro). Existing expo-audio provides PCM capture. Exact dependencies are locked; no forced audit fixes or framework version changes were applied. npm installation still reports 22 affected entries (7 moderate/15 high), matching the previously recorded count; the tree is not audit-clean. This count alone does not establish which advisory paths changed.
+
+The model source revision/checksums and MIT notice are in assets/models. Runtime/model integration choices and native build requirements are documented in docs/SPEECH-INTEGRATION.md. Actual Oppo compatibility and benchmarks remain pending.
+
 2026-10-10 [USER] The Expo SDK 57 foundation stack was approved before installation. Exact resolved versions are captured in package-lock.json; use `npm ci` for reproducible installs.
 
 ## Maintenance and licenses
