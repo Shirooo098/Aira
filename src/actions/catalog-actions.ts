@@ -164,3 +164,30 @@ export async function lookupProduct(
   // 4. Unknown product - NEVER invents a price
   return { kind: 'unknown', query: rawQuery };
 }
+
+export async function updateProductPrice(
+  db: DatabaseSession,
+  productId: string,
+  newPriceCentavos: number
+): Promise<Product> {
+  if (!Number.isSafeInteger(newPriceCentavos) || newPriceCentavos < 0) {
+    throw new CatalogValidationError('Maling halaga ng presyo sa centavos');
+  }
+
+  const existing = await getProductById(db, productId);
+  if (!existing) {
+    throw new CatalogValidationError(`Hindi mahanap ang produkto na may ID: ${productId}`);
+  }
+
+  const now = new Date().toISOString();
+  await db.run(
+    'UPDATE products SET price_centavos = ?, updated_at = ? WHERE id = ?;',
+    [newPriceCentavos, now, productId]
+  );
+
+  return {
+    ...existing,
+    priceCentavos: newPriceCentavos,
+    updatedAt: now,
+  };
+}

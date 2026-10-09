@@ -30,6 +30,149 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 2,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE stock_levels (
+          product_id TEXT PRIMARY KEY NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          quantity INTEGER NOT NULL CHECK (typeof(quantity) = 'integer' AND quantity >= 0),
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE inventory_movements (
+          id TEXT PRIMARY KEY NOT NULL,
+          product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          movement_type TEXT NOT NULL CHECK (movement_type IN ('set_count', 'add_delivery', 'sale_deduction', 'sale_cancellation')),
+          quantity_delta INTEGER NOT NULL CHECK (typeof(quantity_delta) = 'integer'),
+          previous_quantity INTEGER CHECK (previous_quantity IS NULL OR (typeof(previous_quantity) = 'integer' AND previous_quantity >= 0)),
+          new_quantity INTEGER NOT NULL CHECK (typeof(new_quantity) = 'integer' AND new_quantity >= 0),
+          note TEXT,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_inventory_movements_product_id ON inventory_movements (product_id, created_at DESC);
+      `);
+    },
+  },
+  {
+    version: 3,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE sales (
+          id TEXT PRIMARY KEY NOT NULL,
+          payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'gcash')),
+          total_centavos INTEGER NOT NULL CHECK (typeof(total_centavos) = 'integer' AND total_centavos >= 0),
+          tender_centavos INTEGER NOT NULL CHECK (typeof(tender_centavos) = 'integer' AND tender_centavos >= 0),
+          change_centavos INTEGER NOT NULL CHECK (typeof(change_centavos) = 'integer' AND change_centavos >= 0),
+          idempotency_key TEXT UNIQUE,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE sale_items (
+          id TEXT PRIMARY KEY NOT NULL,
+          sale_id TEXT NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+          product_id TEXT NOT NULL REFERENCES products(id),
+          product_name TEXT NOT NULL,
+          product_variant TEXT NOT NULL,
+          product_unit TEXT NOT NULL,
+          unit_price_centavos INTEGER NOT NULL CHECK (typeof(unit_price_centavos) = 'integer' AND unit_price_centavos >= 0),
+          quantity INTEGER NOT NULL CHECK (typeof(quantity) = 'integer' AND quantity > 0),
+          subtotal_centavos INTEGER NOT NULL CHECK (typeof(subtotal_centavos) = 'integer' AND subtotal_centavos >= 0)
+        );
+
+        CREATE INDEX idx_sale_items_sale_id ON sale_items (sale_id);
+        CREATE INDEX idx_sales_created_at ON sales (created_at DESC);
+      `);
+    },
+  },
+  {
+    version: 4,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        ALTER TABLE sales ADD COLUMN reference_number TEXT;
+
+        CREATE TABLE pending_gcash_drafts (
+          id TEXT PRIMARY KEY NOT NULL,
+          total_centavos INTEGER NOT NULL CHECK (typeof(total_centavos) = 'integer' AND total_centavos >= 0),
+          reference_number TEXT,
+          customer_note TEXT,
+          items_json TEXT NOT NULL,
+          status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled')),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_pending_gcash_status ON pending_gcash_drafts (status, created_at DESC);
+      `);
+    },
+  },
+  {
+    version: 5,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE customers (
+          id TEXT PRIMARY KEY NOT NULL,
+          name TEXT NOT NULL,
+          nickname TEXT,
+          note TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_customers_name ON customers (name);
+
+        ALTER TABLE sales ADD COLUMN customer_id TEXT REFERENCES customers(id);
+        ALTER TABLE sales ADD COLUMN paid_centavos INTEGER NOT NULL DEFAULT 0 CHECK (typeof(paid_centavos) = 'integer' AND paid_centavos >= 0);
+        ALTER TABLE sales ADD COLUMN credit_centavos INTEGER NOT NULL DEFAULT 0 CHECK (typeof(credit_centavos) = 'integer' AND credit_centavos >= 0);
+
+        CREATE TABLE credit_entries (
+          id TEXT PRIMARY KEY NOT NULL,
+          customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+          entry_type TEXT NOT NULL CHECK (entry_type IN ('sale_credit', 'opening_balance')),
+          sale_id TEXT REFERENCES sales(id),
+          original_amount_centavos INTEGER NOT NULL CHECK (typeof(original_amount_centavos) = 'integer' AND original_amount_centavos > 0),
+          remaining_amount_centavos INTEGER NOT NULL CHECK (typeof(remaining_amount_centavos) = 'integer' AND remaining_amount_centavos >= 0 AND remaining_amount_centavos <= original_amount_centavos),
+          description TEXT,
+          original_date TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_credit_entries_customer ON credit_entries (customer_id, created_at ASC);
+      `);
+    },
+  },
+  {
+    version: 6,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE credit_repayments (
+          id TEXT PRIMARY KEY NOT NULL,
+          customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+          amount_centavos INTEGER NOT NULL CHECK (typeof(amount_centavos) = 'integer' AND amount_centavos > 0),
+          payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'gcash')),
+          reference_number TEXT,
+          note TEXT,
+          idempotency_key TEXT UNIQUE,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_credit_repayments_customer ON credit_repayments (customer_id, created_at DESC);
+
+        CREATE TABLE repayment_allocations (
+          id TEXT PRIMARY KEY NOT NULL,
+          repayment_id TEXT NOT NULL REFERENCES credit_repayments(id) ON DELETE CASCADE,
+          credit_entry_id TEXT NOT NULL REFERENCES credit_entries(id) ON DELETE RESTRICT,
+          allocated_centavos INTEGER NOT NULL CHECK (typeof(allocated_centavos) = 'integer' AND allocated_centavos > 0),
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_repayment_allocations_repayment ON repayment_allocations (repayment_id);
+        CREATE INDEX idx_repayment_allocations_entry ON repayment_allocations (credit_entry_id);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {

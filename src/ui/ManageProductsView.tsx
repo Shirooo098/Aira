@@ -8,11 +8,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import type { DatabaseSession } from '../db/database.ts';
-import type { Product } from '../types.ts';
-import { saveProduct, getAllProducts } from '../actions/catalog-actions.ts';
+import type { ProductWithStock } from '../types.ts';
+import { saveProduct } from '../actions/catalog-actions.ts';
+import { getAllProductsWithStock } from '../actions/inventory-actions.ts';
 import { parseCentavos, formatCentavos } from '../domain/money.ts';
 import { CatalogValidationError } from '../domain/catalog.ts';
 import { manageProductsStyles as styles } from './manage-products-styles.ts';
+import { StockActionModal, type StockActionModalMode } from './StockActionModal.tsx';
 
 interface ManageProductsViewProps {
   db: DatabaseSession;
@@ -29,15 +31,18 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithStock[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
+
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithStock | null>(null);
+  const [activeStockMode, setActiveStockMode] = useState<StockActionModalMode>(null);
 
   const refreshProducts = async () => {
     setLoadingList(true);
     setListError(null);
     try {
-      const items = await getAllProducts(db);
+      const items = await getAllProductsWithStock(db);
       setProducts(items);
     } catch (err) {
       setListError('Hindi mabasa ang talaan ng paninda. Subukan muli.');
@@ -280,19 +285,102 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
         ) : (
           products.map((item) => (
             <View key={item.id} style={styles.productRow}>
-              <View style={styles.productInfo}>
-                <Text style={styles.itemTitle}>{item.name}</Text>
-                <Text style={styles.itemMeta}>
-                  {item.variant} • {item.unit}
+              <View style={styles.productHeaderRow}>
+                <View style={styles.productInfo}>
+                  <Text style={styles.itemTitle}>{item.name}</Text>
+                  <Text style={styles.itemMeta}>
+                    {item.variant} • {item.unit}
+                  </Text>
+                </View>
+                <Text style={styles.itemPrice}>
+                  {formatCentavos(item.priceCentavos)}
                 </Text>
               </View>
-              <Text style={styles.itemPrice}>
-                {formatCentavos(item.priceCentavos)}
-              </Text>
+
+              <View style={styles.stockBadgeRow}>
+                {item.quantity !== null ? (
+                  <View style={[styles.stockBadge, styles.stockBadgePresent]}>
+                    <Text style={styles.stockBadgeTextPresent}>
+                      Stock: {item.quantity} {item.unit}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={[styles.stockBadge, styles.stockBadgeUncounted]}>
+                    <Text style={styles.stockBadgeTextUncounted}>
+                      Walang naitalang stock
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.productActionsRow}>
+                <TouchableOpacity
+                  style={[styles.actionChip, styles.actionChipPrimary]}
+                  onPress={() => {
+                    setSelectedProduct(item);
+                    setActiveStockMode('set_count');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Itakda ang bilang ng stock para sa ${item.name}`}
+                >
+                  <Text style={styles.actionChipPrimaryText}>Itakda ang Bilang</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionChip}
+                  onPress={() => {
+                    setSelectedProduct(item);
+                    setActiveStockMode('add_delivery');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Magdagdag ng delivery para sa ${item.name}`}
+                >
+                  <Text style={styles.actionChipText}>+ Delivery</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionChip}
+                  onPress={() => {
+                    setSelectedProduct(item);
+                    setActiveStockMode('edit_price');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Baguhin ang presyo para sa ${item.name}`}
+                >
+                  <Text style={styles.actionChipText}>Presyo</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionChip}
+                  onPress={() => {
+                    setSelectedProduct(item);
+                    setActiveStockMode('history');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Tingnan ang kasaysayan ng ${item.name}`}
+                >
+                  <Text style={styles.actionChipText}>Kasaysayan</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
       </View>
+
+      <StockActionModal
+        db={db}
+        product={selectedProduct}
+        mode={activeStockMode}
+        onClose={() => {
+          setSelectedProduct(null);
+          setActiveStockMode(null);
+        }}
+        onSuccess={(msg) => {
+          setSuccessMessage(msg);
+          refreshProducts();
+        }}
+      />
     </ScrollView>
   );
 }
+
