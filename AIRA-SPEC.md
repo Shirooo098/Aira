@@ -1,4 +1,4 @@
-# Tindig — Hackathon MVP Specification
+# Aira — Hackathon MVP Specification
 
 Status: Product decisions confirmed; specification draft prepared for review. Test seams and publication destination await confirmation. Not yet published or labeled ready-for-agent.
 
@@ -12,11 +12,11 @@ A sari-sari store owner keeps product prices in a notebook and sometimes forgets
 
 The target is one owner-operated store on one Oppo Reno6 Z 5G. Useful AI functionality must execute locally and continue working without internet. Photographing an existing notebook is desirable but must not block a reliable voice workflow.
 
-Existing products already advertise offline POS, Filipino input, reporting, credit ledgers, or receipt OCR. Tindig does not claim to be the first or only such product. Its proposed distinction is reliable on-device speech, owner-confirmed store vocabulary, and low-effort capture with visible correction.
+Existing products already advertise offline POS, Filipino input, reporting, credit ledgers, or receipt OCR. Aira does not claim to be the first or only such product. Its proposed distinction is reliable on-device speech, owner-confirmed store vocabulary, and low-effort capture with visible correction.
 
 ## Solution
 
-Tindig is an offline, Filipino-speaking Android store assistant. The working brand descriptor is “Your offline, Filipino-speaking store assistant.” Brand availability has not been checked.
+Aira (Artificial Intelligence for Retail Assistance) is an offline, Filipino-speaking Android store assistant. The working brand descriptor is “Your offline, Filipino-speaking store assistant.” Brand availability has not been checked.
 
 Confirmed improvement priorities:
 
@@ -87,7 +87,7 @@ Modes are Ask price, Sell, and Manage products, with visible indicators and shor
 
 ### Confirmed platform and delivery
 
-- React Native with TypeScript is chosen because all four developers know React. An Expo development build is the proposed integration vehicle; Expo Go is not the target for custom native inference.
+- React Native with TypeScript is chosen because all four developers know React. Expo Go is the confirmed primary phone-testing workflow for the catalog foundation (2026-10-10). Follow README.md for launch instructions. Later custom native inference modules require an Expo development build when unavailable in Expo Go; final standalone offline acceptance uses a release APK.
 - One Android device and one store; Oppo Reno6 Z 5G is the acceptance device. No laptop-hosted inference in the intended product.
 - Required production models are bundled, superseding the earlier download-on-first-use proposal. If extraction is necessary, expose progress, validate readiness, and do not quietly download a replacement.
 - Exact framework, wrapper, runtime, and model versions are pending a successful native integration test. Bundling does not itself establish offline readiness or speed.
