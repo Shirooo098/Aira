@@ -15,3 +15,7 @@ node_modules/
 .expo/
 dist/
 build/
+android/
+ios/
+assets/models/*.bin
+assets/models/*.partial

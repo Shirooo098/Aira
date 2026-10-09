@@ -8,9 +8,13 @@
     "start:tunnel": "expo start --go --tunnel",
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
+    "speech:model": "node scripts/prepare-speech-model.mjs",
+    "speech:prebuild": "npx expo prebuild --platform android",
+    "speech:start": "expo start --dev-client --lan"
   },
   "dependencies": {
+    "buffer": "6.0.3",
     "expo": "57.0.27",
     "expo-asset": "~57.0.19",
     "expo-audio": "~57.0.5",
@@ -18,7 +22,8 @@
     "expo-sqlite": "~57.0.4",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "react-native-safe-area-context": "~5.7.0"
+    "react-native-safe-area-context": "~5.7.0",
+    "whisper.rn": "0.7.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

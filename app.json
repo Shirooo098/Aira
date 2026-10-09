@@ -7,7 +7,7 @@
     "userInterfaceStyle": "light",
     "android": {
       "package": "com.aira.app",
-      "permissions": [],
+      "permissions": ["android.permission.RECORD_AUDIO"],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -18,7 +18,7 @@
       [
         "expo-audio",
         {
-          "recordAudioAndroid": false,
+          "recordAudioAndroid": true,
           "enableBackgroundPlayback": false
         }
       ],

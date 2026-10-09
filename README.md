@@ -4,7 +4,9 @@ Artificial Intelligence for Retail Assistance — an offline, Filipino-speaking 
 
 Framework: Expo with React Native and TypeScript. Development and phone testing: Expo Go.
 
-This foundation implements ticket #1: owner-reviewed catalog entry and typed price lookup. Sales, stock, aliases, speech, OCR and utang belong to later tickets. The Sell mode is visible but does not process transactions.
+The foundation implements ticket #1: owner-reviewed catalog entry and typed price lookup. Ticket #2 adds offline push-to-talk and an editable transcript through a native Android build. Sales, stock, aliases, voice price lookup, OCR and utang belong to later tickets. The Sell mode is visible but does not process transactions.
+
+For Ticket #2, follow [speech build instructions](docs/SPEECH-INTEGRATION.md) and the [Oppo benchmark checklist](docs/SPEECH-BENCHMARK.md). Expo Go supports the catalog; Whisper needs an Android development build.
 
 ## Test on the phone with Expo Go
 

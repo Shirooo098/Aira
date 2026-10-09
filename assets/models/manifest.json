@@ -1,0 +1,10 @@
+{
+  "repository": "ggerganov/whisper.cpp",
+  "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+  "candidates": {
+    "tiny": { "file": "ggml-tiny.bin", "bytes": 77691713, "sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21" },
+    "base": { "file": "ggml-base.bin", "bytes": 147951465, "sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe" }
+  },
+  "selection": "tiny is provisional until actual-device comparison; build one candidate at a time",
+  "license": "MIT; see WHISPER-LICENSE.txt"
+}
