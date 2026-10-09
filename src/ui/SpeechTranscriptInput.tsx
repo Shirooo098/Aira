@@ -33,7 +33,21 @@ function errorMessage(state: SpeechSessionState): string | null {
   return error.message;
 }
 
-export function SpeechTranscriptInput(): React.JSX.Element {
+interface SpeechTranscriptInputProps {
+  onReviewed?: (text: string) => void;
+  onDraftChanged?: () => void;
+  reviewLabel?: string;
+  title?: string;
+  description?: string;
+}
+
+export function SpeechTranscriptInput({
+  onReviewed,
+  onDraftChanged,
+  reviewLabel,
+  title,
+  description,
+}: SpeechTranscriptInputProps = {}): React.JSX.Element {
   const adapter = useMemo(() => createWhisperAdapter(), []);
   const session = useMemo(() => createSpeechSessionController(adapter), [adapter]);
   const [state, setState] = useState<SpeechSessionState>(() => session.getState());
@@ -58,11 +72,12 @@ export function SpeechTranscriptInput(): React.JSX.Element {
         startPending.current = false;
         holdAttempt.current++;
         setReviewedDraft(null);
+        onDraftChanged?.();
         void session.cancelForBackground();
       }
     });
     return () => subscription.remove();
-  }, [session]);
+  }, [session, onDraftChanged]);
 
   const prepareSpeech = () => {
     setSettingsError(false);
@@ -72,6 +87,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
   const handleHoldStart = () => {
     if (!session.getState().prepared || session.getState().status !== 'ready') return;
 
+    onDraftChanged?.();
     holdActive.current = true;
     startPending.current = true;
     const attempt = ++holdAttempt.current;
@@ -106,7 +122,6 @@ export function SpeechTranscriptInput(): React.JSX.Element {
 
   const toggleAccessibleCapture = () => {
     const current = session.getState();
-    setReviewedDraft(null);
     if (current.status === 'recording') {
       void session.stop();
     } else if (current.status === 'starting' || current.status === 'preparing') {
@@ -115,6 +130,8 @@ export function SpeechTranscriptInput(): React.JSX.Element {
       holdAttempt.current++;
       void session.cancel();
     } else if (current.status === 'ready' && current.prepared) {
+      setReviewedDraft(null);
+      onDraftChanged?.();
       void session.start();
     }
   };
@@ -124,6 +141,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
+    onDraftChanged?.();
     void session.cancel();
   };
 
@@ -132,6 +150,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
+    onDraftChanged?.();
     void session.retry();
   };
 
@@ -140,12 +159,14 @@ export function SpeechTranscriptInput(): React.JSX.Element {
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
+    onDraftChanged?.();
     void session.cancel();
   };
 
   const handleReview = () => {
     const draft = session.review();
     setReviewedDraft(draft);
+    if (draft !== null) onReviewed?.(draft);
   };
 
   const handleOpenSettings = () => {
@@ -178,9 +199,9 @@ export function SpeechTranscriptInput(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Gamitin ang boses</Text>
+      <Text style={styles.title}>{title ?? 'Gamitin ang boses'}</Text>
       <Text style={styles.description}>
-        Magsalita sa Filipino o Taglish. Mananatiling draft ang transcript at hindi ito awtomatikong maghahanap o magsa-save.
+        {description ?? 'Magsalita sa Filipino o Taglish. Mananatiling draft ang transcript at hindi ito awtomatikong maghahanap o magsa-save.'}
       </Text>
 
       <View style={styles.statusRow}>
@@ -298,6 +319,7 @@ export function SpeechTranscriptInput(): React.JSX.Element {
             value={state.draft}
             onChangeText={(text) => {
               setReviewedDraft(null);
+              onDraftChanged?.();
               session.edit(text);
             }}
             placeholder="Dito lalabas ang transcript"
@@ -310,16 +332,16 @@ export function SpeechTranscriptInput(): React.JSX.Element {
 
           {reviewedDraft !== null && reviewedDraft === state.draft ? (
             <Text style={styles.reviewedNotice} accessibilityLiveRegion="polite">
-              Nasuri ang draft. Walang nahanap o na-save.
+              {onReviewed ? 'Nasuri ang transcript.' : 'Nasuri ang draft. Walang nahanap o na-save.'}
             </Text>
           ) : (
             <Pressable
               style={styles.primaryButton}
               onPress={handleReview}
               accessibilityRole="button"
-              accessibilityLabel="Markahang nasuri ang transcript"
+              accessibilityLabel={reviewLabel ?? 'Markahang nasuri ang transcript'}
             >
-              <Text style={styles.primaryButtonText}>Markahang Nasuri</Text>
+              <Text style={styles.primaryButtonText}>{reviewLabel ?? 'Markahang Nasuri'}</Text>
             </Pressable>
           )}
 
