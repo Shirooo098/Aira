@@ -1,5 +1,13 @@
 # Continuity
 
+## Ticket #15 — store reports across calendar periods
+
+- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
+- 2026-10-10 [TOOL] Created feature branch `feat/#15-store-reports`. Implemented period calculation domain (`src/domain/reports.ts`) for Asia/Manila (UTC+8) calendar boundaries: Today, Monday-start Week, Month, current plus prior five months, and Year, all bounded by now.
+- 2026-10-10 [TOOL] Implemented report actions (`src/actions/report-actions.ts`) querying real SQLite metrics: Net sales, cancelled sales exclusions, cash/GCash collections (including partial credit sales and non-reversed repayments), new credit, current outstanding debt, stock now snapshot, and units sold ranking.
+- 2026-10-10 [TOOL] Implemented reactive UI slice (`src/ui/StoreReportsView.tsx`) integrated with tab switcher in `src/ui/ManageProductsView.tsx` with honest empty states and no unsupported profit claims.
+- 2026-10-10 [TOOL] Verification: 166/166 automated tests passing (`tests/store-reports.test.ts`), `npm run typecheck` (tsc --noEmit) passes cleanly with 0 errors, `npx expo export --platform android` bundles successfully (686 modules).
+
 ## Ticket #14 — aged utang
 
 - 2026-10-10 [USER] Requested pull of current main and development of ticket #14.
