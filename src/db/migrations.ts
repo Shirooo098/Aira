@@ -30,6 +30,31 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 2,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE stock_levels (
+          product_id TEXT PRIMARY KEY NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          quantity INTEGER NOT NULL CHECK (typeof(quantity) = 'integer' AND quantity >= 0),
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE inventory_movements (
+          id TEXT PRIMARY KEY NOT NULL,
+          product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          movement_type TEXT NOT NULL CHECK (movement_type IN ('set_count', 'add_delivery', 'sale_deduction', 'sale_cancellation')),
+          quantity_delta INTEGER NOT NULL CHECK (typeof(quantity_delta) = 'integer'),
+          previous_quantity INTEGER CHECK (previous_quantity IS NULL OR (typeof(previous_quantity) = 'integer' AND previous_quantity >= 0)),
+          new_quantity INTEGER NOT NULL CHECK (typeof(new_quantity) = 'integer' AND new_quantity >= 0),
+          note TEXT,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_inventory_movements_product_id ON inventory_movements (product_id, created_at DESC);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {

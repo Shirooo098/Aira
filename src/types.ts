@@ -22,3 +22,41 @@ export type LookupResult =
   | { kind: 'unknown'; query: string };
 
 export type AppMode = 'ask-price' | 'sell' | 'manage';
+
+export interface StockLevel {
+  productId: string;
+  quantity: number;
+  updatedAt: string;
+}
+
+export type InventoryMovementType =
+  | 'set_count'
+  | 'add_delivery'
+  | 'sale_deduction'
+  | 'sale_cancellation';
+
+export interface InventoryMovement {
+  id: string;
+  productId: string;
+  movementType: InventoryMovementType;
+  quantityDelta: number;
+  previousQuantity: number | null;
+  newQuantity: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export type ProductWithStock = Product & {
+  quantity: number | null;
+  stockUpdatedAt: string | null;
+};
+
+export interface StockPreview {
+  productId: string;
+  movementType: 'set_count' | 'add_delivery';
+  previousQuantity: number | null;
+  inputQuantity: number;
+  newQuantity: number;
+  quantityDelta: number | null;
+  unit: string;
+}
