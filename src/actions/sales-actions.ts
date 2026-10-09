@@ -1,0 +1,431 @@
+import type { DatabaseSession } from '../db/database.ts';
+import type {
+  Sale,
+  SaleItem,
+  SalePreview,
+  SalePreviewItem,
+} from '../types.ts';
+import {
+  SaleValidationError,
+  InsufficientStockError,
+  calculateSubtotal,
+  calculateSaleTotal,
+  calculateChange,
+  generateSaleId,
+  generateSaleItemId,
+} from '../domain/sales.ts';
+import { generateMovementId } from '../domain/inventory.ts';
+
+interface ProductRow {
+  id: string;
+  name: string;
+  variant: string;
+  unit: string;
+  price_centavos: number;
+}
+
+interface StockRow {
+  product_id: string;
+  quantity: number;
+}
+
+interface SaleRow {
+  id: string;
+  payment_method: 'cash' | 'gcash';
+  total_centavos: number;
+  tender_centavos: number;
+  change_centavos: number;
+  idempotency_key: string | null;
+  created_at: string;
+}
+
+interface SaleItemRow {
+  id: string;
+  sale_id: string;
+  product_id: string;
+  product_name: string;
+  product_variant: string;
+  product_unit: string;
+  unit_price_centavos: number;
+  quantity: number;
+  subtotal_centavos: number;
+}
+
+export async function buildSalePreview(
+  db: DatabaseSession,
+  draft: {
+    items: Array<{ productId: string; quantity: number }>;
+    tenderCentavos: number;
+  }
+): Promise<SalePreview> {
+  if (!Array.isArray(draft.items) || draft.items.length === 0) {
+    throw new SaleValidationError('Walang aytem sa listahan ng bibilhin');
+  }
+
+  const previewItems: SalePreviewItem[] = [];
+  const insufficientStockItems: string[] = [];
+
+  for (const item of draft.items) {
+    if (!Number.isSafeInteger(item.quantity) || item.quantity <= 0) {
+      throw new SaleValidationError('Dapat buong numero at higit sa zero ang dami ng binibili');
+    }
+
+    const product = await db.getFirst<ProductRow>(
+      'SELECT id, name, variant, unit, price_centavos FROM products WHERE id = ?;',
+      [item.productId]
+    );
+
+    if (!product) {
+      throw new SaleValidationError(`Hindi mahanap ang produkto na may ID: ${item.productId}`);
+    }
+
+    const stock = await db.getFirst<StockRow>(
+      'SELECT product_id, quantity FROM stock_levels WHERE product_id = ?;',
+      [item.productId]
+    );
+
+    const availableStock = stock !== null ? stock.quantity : null;
+    const hasSufficientStock = availableStock !== null && availableStock >= item.quantity;
+
+    if (!hasSufficientStock) {
+      insufficientStockItems.push(product.name);
+    }
+
+    const subtotalCentavos = calculateSubtotal(item.quantity, product.price_centavos);
+
+    previewItems.push({
+      productId: product.id,
+      name: product.name,
+      variant: product.variant,
+      unit: product.unit,
+      unitPriceCentavos: product.price_centavos,
+      quantity: item.quantity,
+      subtotalCentavos,
+      availableStock,
+      hasSufficientStock,
+    });
+  }
+
+  const totalCentavos = calculateSaleTotal(previewItems);
+  const tenderCentavos = draft.tenderCentavos ?? 0;
+  if (!Number.isSafeInteger(tenderCentavos) || tenderCentavos < 0) {
+    throw new SaleValidationError('Dapat buong numero at hindi negatibo ang bayad');
+  }
+
+  const changeCentavos = tenderCentavos >= totalCentavos ? tenderCentavos - totalCentavos : 0;
+  const canComplete = insufficientStockItems.length === 0 && tenderCentavos >= totalCentavos;
+
+  return {
+    items: previewItems,
+    totalCentavos,
+    tenderCentavos,
+    changeCentavos,
+    canComplete,
+    insufficientStockItems,
+  };
+}
+
+export async function completeCashSale(
+  db: DatabaseSession,
+  params: {
+    items: Array<{ productId: string; quantity: number }>;
+    tenderCentavos: number;
+    idempotencyKey?: string;
+  }
+): Promise<Sale> {
+  if (!Array.isArray(params.items) || params.items.length === 0) {
+    throw new SaleValidationError('Walang aytem sa benta');
+  }
+
+  // Check idempotency first if key provided
+  if (params.idempotencyKey) {
+    const existingSale = await db.getFirst<SaleRow>(
+      'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
+      [params.idempotencyKey]
+    );
+    if (existingSale) {
+      const items = await getSaleItems(db, existingSale.id);
+      return {
+        id: existingSale.id,
+        paymentMethod: existingSale.payment_method,
+        totalCentavos: existingSale.total_centavos,
+        tenderCentavos: existingSale.tender_centavos,
+        changeCentavos: existingSale.change_centavos,
+        createdAt: existingSale.created_at,
+        items,
+      };
+    }
+  }
+
+  // Pre-validate items: check existence and consolidate quantities per productId
+  const aggregatedQuantities = new Map<string, number>();
+  for (const item of params.items) {
+    if (!Number.isSafeInteger(item.quantity) || item.quantity <= 0) {
+      throw new SaleValidationError('Dapat buong numero at higit sa zero ang dami ng binibili');
+    }
+    const current = aggregatedQuantities.get(item.productId) ?? 0;
+    aggregatedQuantities.set(item.productId, current + item.quantity);
+  }
+
+  await db.exec('BEGIN IMMEDIATE');
+  try {
+    // Re-check idempotency key inside lock
+    if (params.idempotencyKey) {
+      const existingSale = await db.getFirst<SaleRow>(
+        'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
+        [params.idempotencyKey]
+      );
+      if (existingSale) {
+        await db.exec('COMMIT');
+        const items = await getSaleItems(db, existingSale.id);
+        return {
+          id: existingSale.id,
+          paymentMethod: existingSale.payment_method,
+          totalCentavos: existingSale.total_centavos,
+          tenderCentavos: existingSale.tender_centavos,
+          changeCentavos: existingSale.change_centavos,
+          createdAt: existingSale.created_at,
+          items,
+        };
+      }
+    }
+
+    // Fetch product snapshot and stock levels
+    const productMap = new Map<string, ProductRow>();
+    const stockMap = new Map<string, number | null>();
+
+    for (const productId of aggregatedQuantities.keys()) {
+      const product = await db.getFirst<ProductRow>(
+        'SELECT id, name, variant, unit, price_centavos FROM products WHERE id = ?;',
+        [productId]
+      );
+      if (!product) {
+        throw new SaleValidationError(`Hindi mahanap ang produkto na may ID: ${productId}`);
+      }
+      productMap.set(productId, product);
+
+      const stock = await db.getFirst<StockRow>(
+        'SELECT product_id, quantity FROM stock_levels WHERE product_id = ?;',
+        [productId]
+      );
+      stockMap.set(productId, stock !== null ? stock.quantity : null);
+    }
+
+    // Check stock sufficiency
+    const insufficientDetails: Array<{
+      productId: string;
+      productName: string;
+      requestedQuantity: number;
+      availableStock: number | null;
+    }> = [];
+
+    for (const [productId, requestedQuantity] of aggregatedQuantities.entries()) {
+      const currentStock = stockMap.get(productId);
+      const product = productMap.get(productId)!;
+
+      if (currentStock === null || currentStock === undefined || currentStock < requestedQuantity) {
+        insufficientDetails.push({
+          productId,
+          productName: product.name,
+          requestedQuantity,
+          availableStock: currentStock ?? null,
+        });
+      }
+    }
+
+    if (insufficientDetails.length > 0) {
+      const errorNames = insufficientDetails.map((d) => d.productName).join(', ');
+      throw new InsufficientStockError(
+        `Kulang o hindi pa nabibilang ang stock para sa: ${errorNames}. Kailangan munang iwasto ang bilang bago maibenta.`,
+        insufficientDetails
+      );
+    }
+
+    // Calculate line items and total
+    const saleId = generateSaleId();
+    const now = new Date().toISOString();
+    const saleItemsToInsert: SaleItem[] = [];
+
+    for (const item of params.items) {
+      const product = productMap.get(item.productId)!;
+      const subtotalCentavos = calculateSubtotal(item.quantity, product.price_centavos);
+      saleItemsToInsert.push({
+        id: generateSaleItemId(),
+        saleId,
+        productId: product.id,
+        productName: product.name,
+        productVariant: product.variant,
+        productUnit: product.unit,
+        unitPriceCentavos: product.price_centavos,
+        quantity: item.quantity,
+        subtotalCentavos,
+      });
+    }
+
+    const totalCentavos = calculateSaleTotal(saleItemsToInsert);
+    const tenderCentavos = params.tenderCentavos;
+    const changeCentavos = calculateChange(totalCentavos, tenderCentavos);
+
+    // Insert sales record
+    await db.run(
+      `INSERT INTO sales (
+         id, payment_method, total_centavos, tender_centavos, change_centavos,
+         idempotency_key, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+      [
+        saleId,
+        'cash',
+        totalCentavos,
+        tenderCentavos,
+        changeCentavos,
+        params.idempotencyKey ?? null,
+        now,
+      ]
+    );
+
+    // Insert sale items
+    for (const saleItem of saleItemsToInsert) {
+      await db.run(
+        `INSERT INTO sale_items (
+           id, sale_id, product_id, product_name, product_variant, product_unit,
+           unit_price_centavos, quantity, subtotal_centavos
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        [
+          saleItem.id,
+          saleItem.saleId,
+          saleItem.productId,
+          saleItem.productName,
+          saleItem.productVariant,
+          saleItem.productUnit,
+          saleItem.unitPriceCentavos,
+          saleItem.quantity,
+          saleItem.subtotalCentavos,
+        ]
+      );
+    }
+
+    // Deduct stock levels and record inventory movements per aggregated product
+    for (const [productId, deductQuantity] of aggregatedQuantities.entries()) {
+      const prevStock = stockMap.get(productId)!; // guaranteed safe and >= deductQuantity
+      const newStock = prevStock - deductQuantity;
+      const movementId = generateMovementId();
+
+      await db.run(
+        `UPDATE stock_levels SET quantity = ?, updated_at = ? WHERE product_id = ?;`,
+        [newStock, now, productId]
+      );
+
+      await db.run(
+        `INSERT INTO inventory_movements (
+           id, product_id, movement_type, quantity_delta,
+           previous_quantity, new_quantity, note, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+        [
+          movementId,
+          productId,
+          'sale_deduction',
+          -deductQuantity,
+          prevStock,
+          newStock,
+          `Benta: ${saleId}`,
+          now,
+        ]
+      );
+    }
+
+    await db.exec('COMMIT');
+
+    return {
+      id: saleId,
+      totalCentavos,
+      paymentMethod: 'cash',
+      tenderCentavos,
+      changeCentavos,
+      createdAt: now,
+      items: saleItemsToInsert,
+    };
+  } catch (error) {
+    try {
+      await db.exec('ROLLBACK');
+    } catch {
+      // rollback error suppressed
+    }
+    throw error;
+  }
+}
+
+async function getSaleItems(db: DatabaseSession, saleId: string): Promise<SaleItem[]> {
+  const rows = await db.getAll<SaleItemRow>(
+    `SELECT id, sale_id, product_id, product_name, product_variant, product_unit,
+            unit_price_centavos, quantity, subtotal_centavos
+     FROM sale_items
+     WHERE sale_id = ?
+     ORDER BY rowid ASC;`,
+    [saleId]
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    saleId: r.sale_id,
+    productId: r.product_id,
+    productName: r.product_name,
+    productVariant: r.product_variant,
+    productUnit: r.product_unit,
+    unitPriceCentavos: r.unit_price_centavos,
+    quantity: r.quantity,
+    subtotalCentavos: r.subtotal_centavos,
+  }));
+}
+
+export async function getSaleById(
+  db: DatabaseSession,
+  saleId: string
+): Promise<Sale | null> {
+  const row = await db.getFirst<SaleRow>(
+    'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, idempotency_key, created_at FROM sales WHERE id = ?;',
+    [saleId]
+  );
+  if (!row) {
+    return null;
+  }
+
+  const items = await getSaleItems(db, row.id);
+  return {
+    id: row.id,
+    paymentMethod: row.payment_method,
+    totalCentavos: row.total_centavos,
+    tenderCentavos: row.tender_centavos,
+    changeCentavos: row.change_centavos,
+    createdAt: row.created_at,
+    items,
+  };
+}
+
+export async function getRecentSales(
+  db: DatabaseSession,
+  limit: number = 20
+): Promise<Sale[]> {
+  const rows = await db.getAll<SaleRow>(
+    `SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, idempotency_key, created_at
+     FROM sales
+     ORDER BY created_at DESC, rowid DESC
+     LIMIT ?;`,
+    [limit]
+  );
+
+  const sales: Sale[] = [];
+  for (const row of rows) {
+    const items = await getSaleItems(db, row.id);
+    sales.push({
+      id: row.id,
+      paymentMethod: row.payment_method,
+      totalCentavos: row.total_centavos,
+      tenderCentavos: row.tender_centavos,
+      changeCentavos: row.change_centavos,
+      createdAt: row.created_at,
+      items,
+    });
+  }
+
+  return sales;
+}

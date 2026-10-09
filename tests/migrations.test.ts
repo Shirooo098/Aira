@@ -11,13 +11,14 @@ test('runMigrations creates schema_migrations, products, stock_levels, and inven
 
   await runMigrations(db);
 
-  // Table schema_migrations exists and has versions 1 and 2
+  // Table schema_migrations exists and has versions 1, 2, and 3
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 2);
+  assert.equal(migrationRows.length, 3);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
+  assert.equal(migrationRows[2]?.version, 3);
 
   // Tables exist and can be queried
   const productRows = await db.getAll('SELECT * FROM products;');
@@ -29,12 +30,18 @@ test('runMigrations creates schema_migrations, products, stock_levels, and inven
   const movementRows = await db.getAll('SELECT * FROM inventory_movements;');
   assert.equal(movementRows.length, 0);
 
+  const salesRows = await db.getAll('SELECT * FROM sales;');
+  assert.equal(salesRows.length, 0);
+
+  const saleItemRows = await db.getAll('SELECT * FROM sale_items;');
+  assert.equal(saleItemRows.length, 0);
+
   // Re-running migrations is idempotent
   await runMigrations(db);
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 2);
+  assert.equal(secondRunRows.length, 3);
 });
 
 test('the schema rejects fractional and unsafe monetary values', async (t) => {
@@ -97,6 +104,69 @@ test('the schema rejects negative or non-integer stock levels and invalid invent
   }
 });
 
+test('the schema rejects invalid sales and sale_items values', async (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  const db = new NodeSqliteAdapter(sqlite);
+  await runMigrations(db);
+
+  sqlite.exec(`INSERT INTO products VALUES
+    ('p1', 'Coke', '250 ml', 'bote', 1500, 'coke', '250 ml', 'bote', 'now', 'now')`);
+
+  const insertSale = sqlite.prepare(`INSERT INTO sales VALUES
+    (?, ?, ?, ?, ?, ?, 'now')`);
+
+  // Invalid payment_method
+  assert.throws(
+    () => insertSale.run('s1', 'card', 1500, 2000, 500, null),
+    /CHECK constraint/
+  );
+
+  // Negative or non-integer total_centavos
+  for (const invalid of [-1, 15.5, 'abc']) {
+    assert.throws(
+      () => insertSale.run('s2', 'cash', invalid, 2000, 500, null),
+      /CHECK constraint/
+    );
+  }
+
+  // Insert valid sale for sale_items test
+  insertSale.run('s1', 'cash', 1500, 2000, 500, 'key-1');
+
+  // Idempotency key duplicate
+  assert.throws(
+    () => insertSale.run('s2', 'cash', 1500, 2000, 500, 'key-1'),
+    /UNIQUE constraint/
+  );
+
+  const insertItem = sqlite.prepare(`INSERT INTO sale_items VALUES
+    (?, 's1', 'p1', 'Coke', '250 ml', 'bote', ?, ?, ?)`);
+
+  // Quantity must be > 0 and integer
+  for (const invalid of [0, -1, 1.5, 'abc']) {
+    assert.throws(
+      () => insertItem.run('item-1', 1500, invalid, 1500),
+      /CHECK constraint/
+    );
+  }
+
+  // Unit price must be >= 0 and integer
+  for (const invalid of [-1, 1.5, 'abc']) {
+    assert.throws(
+      () => insertItem.run('item-2', invalid, 1, 1500),
+      /CHECK constraint/
+    );
+  }
+
+  // Subtotal must be >= 0 and integer
+  for (const invalid of [-1, 1.5, 'abc']) {
+    assert.throws(
+      () => insertItem.run('item-3', 1500, 1, invalid),
+      /CHECK constraint/
+    );
+  }
+});
+
 test('failed migration rolls back schema changes and remains retryable', async (t) => {
   const sqlite = new DatabaseSync(':memory:');
   t.after(() => sqlite.close());
@@ -120,5 +190,5 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 3);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 4);
 });

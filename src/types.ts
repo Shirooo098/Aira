@@ -60,3 +60,59 @@ export interface StockPreview {
   quantityDelta: number | null;
   unit: string;
 }
+
+export type PaymentMethod = 'cash' | 'gcash';
+
+export interface SaleItemDraft {
+  productId: string;
+  quantity: number;
+}
+
+export interface SaleDraft {
+  items: SaleItemDraft[];
+  tenderCentavos?: number;
+}
+
+export interface SaleItem {
+  id: string;
+  saleId: string;
+  productId: string;
+  productName: string;
+  productVariant: string;
+  productUnit: string;
+  unitPriceCentavos: number;
+  quantity: number;
+  subtotalCentavos: number;
+}
+
+export interface Sale {
+  id: string;
+  totalCentavos: number;
+  paymentMethod: PaymentMethod;
+  tenderCentavos: number;
+  changeCentavos: number;
+  createdAt: string;
+  items: SaleItem[];
+}
+
+export interface SalePreviewItem {
+  productId: string;
+  name: string;
+  variant: string;
+  unit: string;
+  unitPriceCentavos: number;
+  quantity: number;
+  subtotalCentavos: number;
+  availableStock: number | null;
+  hasSufficientStock: boolean;
+}
+
+export interface SalePreview {
+  items: SalePreviewItem[];
+  totalCentavos: number;
+  tenderCentavos: number;
+  changeCentavos: number;
+  canComplete: boolean;
+  insufficientStockItems: string[];
+}
+

@@ -131,7 +131,7 @@ export default function App(): React.JSX.Element {
 
             <View style={styles.viewSlot}>
               {activeMode === 'ask-price' && <AskPriceView db={db} />}
-              {activeMode === 'sell' && <SellView />}
+              {activeMode === 'sell' && <SellView db={db} />}
               {activeMode === 'manage' && <ManageProductsView db={db} />}
             </View>
           </View>

@@ -55,6 +55,37 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE sales (
+          id TEXT PRIMARY KEY NOT NULL,
+          payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'gcash')),
+          total_centavos INTEGER NOT NULL CHECK (typeof(total_centavos) = 'integer' AND total_centavos >= 0),
+          tender_centavos INTEGER NOT NULL CHECK (typeof(tender_centavos) = 'integer' AND tender_centavos >= 0),
+          change_centavos INTEGER NOT NULL CHECK (typeof(change_centavos) = 'integer' AND change_centavos >= 0),
+          idempotency_key TEXT UNIQUE,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE sale_items (
+          id TEXT PRIMARY KEY NOT NULL,
+          sale_id TEXT NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+          product_id TEXT NOT NULL REFERENCES products(id),
+          product_name TEXT NOT NULL,
+          product_variant TEXT NOT NULL,
+          product_unit TEXT NOT NULL,
+          unit_price_centavos INTEGER NOT NULL CHECK (typeof(unit_price_centavos) = 'integer' AND unit_price_centavos >= 0),
+          quantity INTEGER NOT NULL CHECK (typeof(quantity) = 'integer' AND quantity > 0),
+          subtotal_centavos INTEGER NOT NULL CHECK (typeof(subtotal_centavos) = 'integer' AND subtotal_centavos >= 0)
+        );
+
+        CREATE INDEX idx_sale_items_sale_id ON sale_items (sale_id);
+        CREATE INDEX idx_sales_created_at ON sales (created_at DESC);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {
