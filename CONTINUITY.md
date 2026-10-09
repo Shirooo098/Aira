@@ -55,6 +55,14 @@
 - 2026-10-10 [TOOL] GitHub confirms canonical repository Shirooo098/Aira. Inspected all 20 issues; updated issue #1, the only issue with old brand text. Verified no old brand in live titles/bodies.
 - 2026-10-10 [TOOL] Updated local specification, developer guide, ticket plan and ticket URL references. Legacy local filenames retained for stable links. No commit or push.
 
+## Ticket #10 — D4 receipt first slice
+
+- 2026-10-10 [USER] Requested starting ticket #10 and creating a branch.
+- 2026-10-10 [TOOL] Fetched main at 4c02e62; #9 is merged via f6709a1 and closed on GitHub. Created feat/#10-gcash-receipt-ocr from origin/main.
+- 2026-10-10 [TOOL] Implemented conservative receipt-text proposals and read-only amount/reference review against existing GCash sale/draft/repayment records. No payment confirmation, stock writes or schema changes.
+- 2026-10-10 [TOOL] Type checking and all 129 tests pass; 16 new receipt tests. Standards/spec reviews resolved the sender-heading ambiguity and report no remaining findings for this first slice.
+- 2026-10-10 [TOOL] Native dependency proposal and retention/consistency contract are in docs/TICKET-10-RECEIPTS.md. Requested approval for Infinite Red bundled Latin ML Kit wrapper, expo-image-picker and expo-file-system under existing dependency policy. No answer received yet; native capture/OCR, attachment persistence/search/UI and physical offline acceptance remain incomplete. No commit/push performed for #10.
+
 ## Ticket #2 — D1 speech implementation
 
 - 2026-10-10 [USER] Requested astra-orchestrator to start building Ticket #2. Confirmed the Oppo is not available for testing now.
