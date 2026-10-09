@@ -33,19 +33,37 @@
 - 2026-10-10 [TOOL] Final tests: 162/162 pass, including 5 new aging suites covering real SQLite repayment/reversal/cancellation/restart and calendar boundaries. TypeScript passes. Android export passes; physical Oppo accessibility, foreground/midnight refresh and standalone offline acceptance remain pending. See docs/TICKET-14-AGING.md.
 
 ## Snapshot
-- 2026-10-10 [USER] Goal: implement D4 tickets using astra-orchestrator and implement skills.
-- 2026-10-10 [TOOL] Ticket #1 ("Create an offline catalog and typed price lookup") implementation and full verification complete.
-- 2026-10-10 [USER] User switched role to Developer 3 ("D3 — Transactions, Inventory & Utang Ledger / Data Coordinator") and requested ticket implementation.
-- 2026-10-10 [TOOL] Ticket #7 ("Complete a cash sale with consistent inventory") merged via PR #23.
-- 2026-10-10 [TOOL] Created feature branch `feat/#9-owner-confirmed-gcash` on the unblocked frontier for Ticket #9 ("Record owner-confirmed GCash purchases").
-- 2026-10-10 [TOOL] Ticket #9 implementation complete: Migration v4 (`pending_gcash_drafts` and `reference_number` column on `sales`), transactional drafting and confirmation action layer (`createPendingGcashDraft`, `confirmGcashSale`, `cancelPendingGcashDraft`), and complete UI slice in `SellView.tsx` with payment method toggle (Cash/GCash), owner confirmation banner (anti-screenshot-fraud warning), and pending draft queue.
-- 2026-10-10 [TOOL] Verification: 42/42 automated tests pass across all test suites, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (652 modules).
+- 2026-10-10 [USER] Requested completion of Developer 4 (App Shell, OCR & Integration Lead) role and ticket status verification under AGENTS.md rules.
 - 2026-10-10 [TOOL] Ticket verification and status audit complete across all 20 tickets:
-  - 12 tickets verified CLOSED & merged to main: #1 (catalog/lookup), #2 (offline Whisper), #3 (aliases), #4 (stock/deliveries), #5 (voice price lookup), #6 (dictated catalog), #7 (cash sale/inventory), #9 (owner-confirmed GCash), #11 (credit sales), #12 (oldest-first repayments), #13 (reversals/cancellations), #14 (aged utang dashboard).
-  - 1 ticket IN PROGRESS: #10 (receipt extraction first slice merged to main; native OCR & storage slice pending approval).
-  - 4 tickets UNBLOCKED / READY FOR AGENT: #8 (voice order drafting), #15 (calendar period reports), #16 (guarded local agent proof), #19 (notebook OCR review).
-  - 3 tickets BLOCKED: #17 (blocked by #15, #16), #18 (blocked by #17), #20 (blocked by #8, #10, #14, #18).
-  - Verification suite: 162/162 tests passing (`npm test`), 0 TypeScript errors (`npm run typecheck`).
+  - 15 tickets verified CLOSED & merged to main:
+    - #1 (offline catalog & lookup - D4)
+    - #2 (offline Whisper speech - D1)
+    - #3 (product aliases - D2)
+    - #4 (stock counts & deliveries - D3)
+    - #5 (voice price lookup - D1)
+    - #6 (dictated catalog - D2)
+    - #7 (cash sales with inventory - D3)
+    - #9 (owner-confirmed GCash - D3)
+    - #10 (attach & extract GCash receipts - D4)
+    - #11 (customer credit sales - D3)
+    - #12 (oldest-first repayments - D3)
+    - #13 (cancellations & reversals - D3)
+    - #14 (aged utang dashboard - D4)
+    - #15 (calendar period store reports - D4)
+    - #19 (notebook OCR review spike - D4)
+  - 2 tickets UNBLOCKED / READY FOR AGENT (Frontier for D2):
+    - #8 (speak and correct order before checkout - D2; unblocked by #5, #7)
+    - #16 (prove bundled local agent with guarded tool request - D2; unblocked by #1)
+  - 2 tickets BLOCKED (D2):
+    - #17 (explain selected report in Filipino - D2; blocked by #15, #16)
+    - #18 (prepare restock checklist - D2; blocked by #17)
+  - 1 ticket BLOCKED (Final Milestone):
+    - #20 (verify offline demo & submission evidence - D4; blocked by #6, #8, #10, #14, #18)
+  - Developer 4 completion status:
+    - All 5 implementation tickets owned by D4 (#1, #10, #14, #15, #19) are 100% COMPLETE, merged to `main` via PRs, and closed on GitHub.
+    - Ticket #20 is strictly blocked under AGENTS.md Frontier rules until D2 completes tickets #8 and #18.
+  - Verification suite: 176/176 tests passing (`npm test`), 0 TypeScript errors (`npm run typecheck`), Android bundle exports cleanly (692 modules).
+
 
 
 
