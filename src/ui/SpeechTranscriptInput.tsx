@@ -15,6 +15,9 @@ import { speechTranscriptStyles as styles } from './speech-transcript-styles.ts'
 interface SpeechTranscriptInputProps {
   onReviewedTranscript?: (text: string) => void;
   onTranscriptInvalidated?: () => void;
+  reviewLabel?: string;
+  title?: string;
+  description?: string;
 }
 
 function errorMessage(state: SpeechSessionState): string | null {
@@ -41,7 +44,10 @@ function errorMessage(state: SpeechSessionState): string | null {
 export function SpeechTranscriptInput({
   onReviewedTranscript,
   onTranscriptInvalidated,
-}: SpeechTranscriptInputProps): React.JSX.Element {
+  reviewLabel,
+  title,
+  description,
+}: SpeechTranscriptInputProps = {}): React.JSX.Element {
   const adapter = useMemo(() => createWhisperAdapter(), []);
   const onReviewedTranscriptRef = useRef(onReviewedTranscript);
   const onTranscriptInvalidatedRef = useRef(onTranscriptInvalidated);
@@ -206,9 +212,9 @@ export function SpeechTranscriptInput({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Gamitin ang boses</Text>
+      <Text style={styles.title}>{title ?? 'Gamitin ang boses'}</Text>
       <Text style={styles.description}>
-        Magsalita sa Filipino o Taglish, hal. “Magkano ang Coke?” Suriin muna ang transcript bago hanapin sa catalog; walang awtomatikong sine-save.
+        {description ?? 'Magsalita sa Filipino o Taglish, hal. “Magkano ang Coke?” Suriin muna ang transcript bago hanapin sa catalog; walang awtomatikong sine-save.'}
       </Text>
 
       <View style={styles.statusRow}>
@@ -346,9 +352,9 @@ export function SpeechTranscriptInput({
               style={styles.primaryButton}
               onPress={handleReview}
               accessibilityRole="button"
-              accessibilityLabel="Markahang nasuri ang transcript"
+              accessibilityLabel={reviewLabel ?? 'Markahang nasuri ang transcript'}
             >
-              <Text style={styles.primaryButtonText}>Markahang Nasuri</Text>
+              <Text style={styles.primaryButtonText}>{reviewLabel ?? 'Markahang Nasuri'}</Text>
             </Pressable>
           )}
 

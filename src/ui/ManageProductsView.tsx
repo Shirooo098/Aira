@@ -16,6 +16,7 @@ import { CatalogValidationError } from '../domain/catalog.ts';
 import { manageProductsStyles as styles } from './manage-products-styles.ts';
 import { StockActionModal, type StockActionModalMode } from './StockActionModal.tsx';
 import { AliasReviewModal } from './AliasReviewModal.tsx';
+import { CatalogDictationModal } from './CatalogDictationModal.tsx';
 
 interface ManageProductsViewProps {
   db: DatabaseSession;
@@ -39,6 +40,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
   const [selectedProduct, setSelectedProduct] = useState<ProductWithStock | null>(null);
   const [activeStockMode, setActiveStockMode] = useState<StockActionModalMode>(null);
   const [aliasProduct, setAliasProduct] = useState<ProductWithStock | null>(null);
+  const [catalogDictationOpen, setCatalogDictationOpen] = useState(false);
 
   const refreshProducts = async () => {
     setLoadingList(true);
@@ -133,6 +135,14 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
       <View style={styles.header}>
         <Text style={styles.title}>Pamahalaan ang mga Produkto</Text>
         <Text style={styles.subtitle}>Magrehistro ng paninda at suriin bago i-save</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, { flex: 0, alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 18 }]}
+          onPress={() => setCatalogDictationOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Idikta ang pagbabago sa paninda"
+        >
+          <Text style={styles.saveButtonText}>Idikta ang pagbabago</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.formCard}>
@@ -401,6 +411,19 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
           onSuccess={(msg) => {
             setSuccessMessage(msg);
             setAliasProduct(null);
+          }}
+        />
+      )}
+
+      {catalogDictationOpen && (
+        <CatalogDictationModal
+          db={db}
+          products={products}
+          onClose={() => setCatalogDictationOpen(false)}
+          onSuccess={(message) => {
+            setSuccessMessage(message);
+            void refreshProducts();
+            setCatalogDictationOpen(false);
           }}
         />
       )}
