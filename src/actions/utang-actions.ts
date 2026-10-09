@@ -15,6 +15,7 @@ import {
   CustomerValidationError,
   CreditValidationError,
   OverpaymentError,
+  RepaymentAlreadyReversedError,
   validateCustomerName,
   validateCentavoAmount,
   generateCustomerId,
@@ -53,6 +54,7 @@ interface CreditEntryRow {
   remaining_amount_centavos: number;
   description: string | null;
   original_date: string | null;
+  status?: 'active' | 'cancelled';
   created_at: string;
   updated_at: string;
 }
@@ -81,6 +83,9 @@ interface SaleRow {
   credit_centavos: number;
   reference_number: string | null;
   idempotency_key: string | null;
+  status?: 'completed' | 'cancelled';
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
   created_at: string;
 }
 
@@ -104,6 +109,9 @@ interface CreditRepaymentRow {
   reference_number: string | null;
   note: string | null;
   idempotency_key: string | null;
+  status?: 'active' | 'reversed';
+  reversed_at?: string | null;
+  reversal_reason?: string | null;
   created_at: string;
 }
 
@@ -112,6 +120,7 @@ interface RepaymentAllocationRow {
   repayment_id: string;
   credit_entry_id: string;
   allocated_centavos: number;
+  status?: 'active' | 'reversed';
   created_at: string;
 }
 
@@ -127,6 +136,9 @@ function mapRepaymentRow(
     referenceNumber: row.reference_number ?? null,
     note: row.note ?? null,
     idempotencyKey: row.idempotency_key ?? null,
+    status: row.status ?? 'active',
+    reversedAt: row.reversed_at ?? null,
+    reversalReason: row.reversal_reason ?? null,
     createdAt: row.created_at,
     allocations,
   };
@@ -138,6 +150,7 @@ function mapAllocationRow(row: RepaymentAllocationRow): RepaymentAllocation {
     repaymentId: row.repayment_id,
     creditEntryId: row.credit_entry_id,
     allocatedCentavos: row.allocated_centavos,
+    status: row.status ?? 'active',
     createdAt: row.created_at,
   };
 }
@@ -152,6 +165,7 @@ function mapCreditEntryRow(row: CreditEntryRow): CreditEntry & { rowid?: number 
     remainingAmountCentavos: row.remaining_amount_centavos,
     description: row.description ?? null,
     originalDate: row.original_date ?? null,
+    status: row.status ?? 'active',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     rowid: row.rowid,
@@ -192,6 +206,9 @@ function mapSaleRow(row: SaleRow, items: SaleItem[]): Sale {
     paidCentavos: row.paid_centavos,
     creditCentavos: row.credit_centavos,
     referenceNumber: row.reference_number ?? null,
+    status: row.status ?? 'completed',
+    cancelledAt: row.cancelled_at ?? null,
+    cancellationReason: row.cancellation_reason ?? null,
     createdAt: row.created_at,
     items,
   };
@@ -232,7 +249,7 @@ export async function getCustomers(db: DatabaseSession): Promise<CustomerWithBal
       COALESCE(SUM(ce.remaining_amount_centavos), 0) AS total_debt,
       COUNT(CASE WHEN ce.remaining_amount_centavos > 0 THEN 1 END) AS active_credit_count
     FROM customers c
-    LEFT JOIN credit_entries ce ON c.id = ce.customer_id
+    LEFT JOIN credit_entries ce ON c.id = ce.customer_id AND ce.status != 'cancelled'
     GROUP BY c.id
     ORDER BY c.name COLLATE NOCASE ASC, c.created_at ASC;
   `);
@@ -262,7 +279,7 @@ export async function getCustomerById(
       COALESCE(SUM(ce.remaining_amount_centavos), 0) AS total_debt,
       COUNT(CASE WHEN ce.remaining_amount_centavos > 0 THEN 1 END) AS active_credit_count
     FROM customers c
-    LEFT JOIN credit_entries ce ON c.id = ce.customer_id
+    LEFT JOIN credit_entries ce ON c.id = ce.customer_id AND ce.status != 'cancelled'
     WHERE c.id = ?
     GROUP BY c.id;
   `,
@@ -681,7 +698,7 @@ export async function previewRepaymentAllocation(
     `SELECT rowid, id, customer_id, entry_type, sale_id, original_amount_centavos,
             remaining_amount_centavos, description, original_date, created_at, updated_at
      FROM credit_entries
-     WHERE customer_id = ? AND remaining_amount_centavos > 0
+     WHERE customer_id = ? AND remaining_amount_centavos > 0 AND status != 'cancelled'
      ORDER BY 
        CASE WHEN entry_type = 'opening_balance' THEN 0 ELSE 1 END ASC,
        CASE WHEN original_date IS NULL THEN 0 ELSE 1 END ASC,
@@ -857,7 +874,7 @@ export async function getCustomerRepayments(
   customerId: string
 ): Promise<CreditRepayment[]> {
   const repaymentRows = await db.getAll<CreditRepaymentRow>(
-    `SELECT id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, created_at
+    `SELECT id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, status, reversed_at, reversal_reason, created_at
      FROM credit_repayments
      WHERE customer_id = ?
      ORDER BY created_at DESC;`,
@@ -867,7 +884,7 @@ export async function getCustomerRepayments(
   const result: CreditRepayment[] = [];
   for (const rRow of repaymentRows) {
     const allocRows = await db.getAll<RepaymentAllocationRow>(
-      `SELECT id, repayment_id, credit_entry_id, allocated_centavos, created_at
+      `SELECT id, repayment_id, credit_entry_id, allocated_centavos, status, created_at
        FROM repayment_allocations
        WHERE repayment_id = ?
        ORDER BY created_at ASC;`,
@@ -884,7 +901,7 @@ export async function getRepaymentById(
   repaymentId: string
 ): Promise<CreditRepayment | null> {
   const rRow = await db.getFirst<CreditRepaymentRow>(
-    `SELECT id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, created_at
+    `SELECT id, customer_id, amount_centavos, payment_method, reference_number, note, idempotency_key, status, reversed_at, reversal_reason, created_at
      FROM credit_repayments
      WHERE id = ?;`,
     [repaymentId]
@@ -893,7 +910,7 @@ export async function getRepaymentById(
   if (!rRow) return null;
 
   const allocRows = await db.getAll<RepaymentAllocationRow>(
-    `SELECT id, repayment_id, credit_entry_id, allocated_centavos, created_at
+    `SELECT id, repayment_id, credit_entry_id, allocated_centavos, status, created_at
      FROM repayment_allocations
      WHERE repayment_id = ?
      ORDER BY created_at ASC;`,
@@ -901,6 +918,129 @@ export async function getRepaymentById(
   );
 
   return mapRepaymentRow(rRow, allocRows.map(mapAllocationRow));
+}
+
+export async function reverseRepayment(
+  db: DatabaseSession,
+  params: {
+    repaymentId: string;
+    reason?: string;
+  }
+): Promise<{
+  repayment: CreditRepayment;
+  restoredEntries: Array<{
+    creditEntryId: string;
+    restoredCentavos: number;
+    newRemainingCentavos: number;
+  }>;
+}> {
+  if (!params.repaymentId || params.repaymentId.trim().length === 0) {
+    throw new CreditValidationError('Kailangang maglagay ng ID ng bayad na ire-reverse');
+  }
+
+  const repayment = await getRepaymentById(db, params.repaymentId.trim());
+  if (!repayment) {
+    throw new CreditValidationError(`Hindi mahanap ang tala ng bayad na may ID: ${params.repaymentId}`);
+  }
+
+  if (repayment.status === 'reversed') {
+    throw new RepaymentAlreadyReversedError(
+      `Na-reverse na ang bayad na ito${repayment.reversedAt ? ` noong ${repayment.reversedAt}` : ''}`
+    );
+  }
+
+  const now = new Date().toISOString();
+  const reason = params.reason?.trim() ? params.reason.trim() : null;
+
+  await db.exec('BEGIN IMMEDIATE');
+  try {
+    // 1. Mark repayment as reversed
+    await db.run(
+      `UPDATE credit_repayments
+       SET status = 'reversed',
+           reversed_at = ?,
+           reversal_reason = ?
+       WHERE id = ?;`,
+      [now, reason, repayment.id]
+    );
+
+    // 2. Mark allocations as reversed
+    await db.run(
+      `UPDATE repayment_allocations
+       SET status = 'reversed'
+       WHERE repayment_id = ?;`,
+      [repayment.id]
+    );
+
+    // 3. Restore remaining_amount_centavos on allocated credit entries
+    const restoredEntries: Array<{
+      creditEntryId: string;
+      restoredCentavos: number;
+      newRemainingCentavos: number;
+    }> = [];
+
+    for (const alloc of repayment.allocations) {
+      const entry = await db.getFirst<{
+        id: string;
+        original_amount_centavos: number;
+        remaining_amount_centavos: number;
+      }>(
+        'SELECT id, original_amount_centavos, remaining_amount_centavos FROM credit_entries WHERE id = ?;',
+        [alloc.creditEntryId]
+      );
+
+      if (!entry) {
+        throw new CreditValidationError(`Hindi mahanap ang credit entry: ${alloc.creditEntryId}`);
+      }
+
+      const newRemaining = entry.remaining_amount_centavos + alloc.allocatedCentavos;
+      if (newRemaining > entry.original_amount_centavos) {
+        throw new CreditValidationError(
+          `Lalampas ang utang (${newRemaining}) sa orihinal na halaga (${entry.original_amount_centavos})`
+        );
+      }
+
+      // Restore remaining debt without altering original_date or created_at (preserves debt age)
+      await db.run(
+        `UPDATE credit_entries
+         SET remaining_amount_centavos = ?,
+             updated_at = ?
+         WHERE id = ?;`,
+        [newRemaining, now, alloc.creditEntryId]
+      );
+
+      restoredEntries.push({
+        creditEntryId: alloc.creditEntryId,
+        restoredCentavos: alloc.allocatedCentavos,
+        newRemainingCentavos: newRemaining,
+      });
+    }
+
+    await db.exec('COMMIT');
+
+    const updatedRepayment: CreditRepayment = {
+      ...repayment,
+      status: 'reversed',
+      reversedAt: now,
+      reversalReason: reason,
+      allocations: repayment.allocations.map((a) => ({
+        ...a,
+        status: 'reversed',
+      })),
+    };
+
+    return {
+      repayment: updatedRepayment,
+      restoredEntries,
+    };
+  } catch (error) {
+    try {
+      await db.exec('ROLLBACK');
+    } catch {
+      // rollback error suppressed
+    }
+    throw error;
+  }
 }
 
 export async function getCustomerLedger(
@@ -919,7 +1059,7 @@ export async function getCustomerLedger(
 
   const creditRows = await db.getAll<CreditEntryRow>(
     `SELECT id, customer_id, entry_type, sale_id, original_amount_centavos,
-            remaining_amount_centavos, description, original_date, created_at, updated_at
+            remaining_amount_centavos, description, original_date, status, created_at, updated_at
      FROM credit_entries
      WHERE customer_id = ?
      ORDER BY created_at ASC;`,
@@ -931,7 +1071,7 @@ export async function getCustomerLedger(
   const saleRows = await db.getAll<SaleRow>(
     `SELECT id, customer_id, payment_method, total_centavos, tender_centavos,
             change_centavos, paid_centavos, credit_centavos, reference_number,
-            idempotency_key, created_at
+            idempotency_key, status, cancelled_at, cancellation_reason, created_at
      FROM sales
      WHERE customer_id = ?
      ORDER BY created_at DESC;`,

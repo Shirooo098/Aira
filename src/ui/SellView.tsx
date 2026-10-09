@@ -13,6 +13,7 @@ import type {
   SalePreview,
   PendingGcashDraft,
   CustomerWithBalance,
+  Sale,
 } from '../types.ts';
 import { getAllProductsWithStock } from '../actions/inventory-actions.ts';
 import {
@@ -22,6 +23,8 @@ import {
   getPendingGcashDrafts,
   confirmGcashSale,
   cancelPendingGcashDraft,
+  getRecentSales,
+  cancelSale,
 } from '../actions/sales-actions.ts';
 import {
   getCustomers,
@@ -30,7 +33,12 @@ import {
   recordOpeningBalance,
 } from '../actions/utang-actions.ts';
 import { parseCentavos, formatCentavos } from '../domain/money.ts';
-import { SaleValidationError, InsufficientStockError } from '../domain/sales.ts';
+import {
+  SaleValidationError,
+  InsufficientStockError,
+  SaleAlreadyCancelledError,
+  PaidCreditSaleCancellationError,
+} from '../domain/sales.ts';
 import { CustomerValidationError, CreditValidationError } from '../domain/utang.ts';
 import { RepaymentModal } from './RepaymentModal.tsx';
 import { sellStyles as styles } from './sell-styles.ts';
@@ -84,6 +92,12 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
     itemCount: number;
   } | null>(null);
 
+  const [recentSales, setRecentSales] = useState<Sale[]>([]);
+  const [cancellingSaleId, setCancellingSaleId] = useState<string | null>(null);
+  const [cancelReasonInput, setCancelReasonInput] = useState('');
+  const [cancellingSale, setCancellingSale] = useState(false);
+  const [cancelSaleError, setCancelSaleError] = useState<string | null>(null);
+
   const loadProducts = async () => {
     try {
       setLoadingProducts(true);
@@ -123,10 +137,22 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
     }
   };
 
+  const loadRecentSales = async () => {
+    try {
+      const sales = await getRecentSales(db, 10);
+      setRecentSales(sales);
+    } catch (err) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error('[SellView] Error fetching recent sales:', err);
+      }
+    }
+  };
+
   useEffect(() => {
     loadProducts();
     loadPendingDrafts();
     loadCustomers();
+    loadRecentSales();
   }, [db]);
 
   // Recompute preview whenever cart or tender input changes
@@ -280,6 +306,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
       setTenderInput('');
       setPreview(null);
       await loadProducts();
+      await loadRecentSales();
     } catch (err) {
       if (err instanceof InsufficientStockError || err instanceof SaleValidationError) {
         setErrorMessage(err.message);
@@ -377,6 +404,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
       setPreview(null);
       await loadProducts();
       await loadCustomers();
+      await loadRecentSales();
     } catch (err) {
       if (
         err instanceof InsufficientStockError ||
@@ -419,6 +447,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
 
       await loadProducts();
       await loadPendingDrafts();
+      await loadRecentSales();
     } catch (err) {
       if (err instanceof InsufficientStockError || err instanceof SaleValidationError) {
         setErrorMessage(err.message);
@@ -446,6 +475,39 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
     } finally {
       submitInProgress.current = false;
       setSubmitting(false);
+    }
+  };
+
+  const handleCancelSale = async (saleId: string) => {
+    if (cancellingSale) return;
+    setCancellingSale(true);
+    setCancelSaleError(null);
+
+    try {
+      await cancelSale(db, {
+        saleId,
+        reason: cancelReasonInput.trim().length > 0 ? cancelReasonInput.trim() : undefined,
+      });
+
+      setCancellingSaleId(null);
+      setCancelReasonInput('');
+      await loadProducts();
+      await loadCustomers();
+      await loadRecentSales();
+      setSuccessInfo(null);
+      setErrorMessage(null);
+    } catch (err) {
+      if (
+        err instanceof SaleAlreadyCancelledError ||
+        err instanceof PaidCreditSaleCancellationError ||
+        err instanceof SaleValidationError
+      ) {
+        setCancelSaleError(err.message);
+      } else {
+        setCancelSaleError('Nagkaroon ng aberya sa pagkansela ng benta.');
+      }
+    } finally {
+      setCancellingSale(false);
     }
   };
 
@@ -1000,6 +1062,115 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
           </View>
         )}
       </View>
+
+      {/* Recent Sales Card */}
+      {recentSales.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.sectionHeader}>Mga Kamakailang Benta ({recentSales.length})</Text>
+
+          {cancelSaleError && (
+            <View style={[styles.errorBox, { marginBottom: 10 }]} accessibilityRole="alert">
+              <Text style={styles.errorText}>{cancelSaleError}</Text>
+            </View>
+          )}
+
+          {recentSales.map((sale) => (
+            <View key={sale.id} style={styles.recentSaleItem}>
+              <View style={styles.recentSaleHeader}>
+                <Text style={styles.recentSaleTitle}>
+                  {sale.paymentMethod === 'cash' ? 'Cash' : sale.paymentMethod === 'gcash' ? 'GCash' : 'Utang'} Benta
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {sale.status === 'cancelled' && (
+                    <View style={styles.cancelledBadge}>
+                      <Text style={styles.cancelledBadgeText}>Kanselado</Text>
+                    </View>
+                  )}
+                  <Text
+                    style={[
+                      styles.recentSaleAmount,
+                      sale.status === 'cancelled' && { color: '#94a3b8', textDecorationLine: 'line-through' },
+                    ]}
+                  >
+                    ₱{formatCentavos(sale.totalCentavos)}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.recentSaleMeta}>
+                {sale.items.length} aytem • {new Date(sale.createdAt).toLocaleTimeString('fil-PH', { hour: '2-digit', minute: '2-digit' })}
+                {sale.referenceNumber ? ` • Ref: ${sale.referenceNumber}` : ''}
+              </Text>
+
+              {sale.status === 'cancelled' && (
+                <Text style={styles.cancelledReasonText}>
+                  Kinansela{sale.cancelledAt ? ` noong ${new Date(sale.cancelledAt).toLocaleTimeString('fil-PH', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                  {sale.cancellationReason ? `: "${sale.cancellationReason}"` : ''}
+                </Text>
+              )}
+
+              {sale.status !== 'cancelled' && (
+                <>
+                  {cancellingSaleId === sale.id ? (
+                    <View style={styles.cancelConfirmBox}>
+                      <Text style={styles.cancelConfirmPrompt}>
+                        Sigurado ka bang nais mong kanselahin ang bentang ito?
+                      </Text>
+                      <Text style={styles.cancelConfirmWarning}>
+                        Ibabalik ang mga nabawas na paninda sa imbentaryo. Hindi ito maglalabas ng pera sa bangko o GCash.
+                      </Text>
+                      <TextInput
+                        style={styles.cancelInput}
+                        placeholder="Dahilan ng pagkansela (hal. nagbago ang isip)"
+                        placeholderTextColor="#9ca3af"
+                        value={cancelReasonInput}
+                        onChangeText={setCancelReasonInput}
+                        editable={!cancellingSale}
+                      />
+                      <View style={styles.cancelActionsRow}>
+                        <TouchableOpacity
+                          style={styles.cancelCancelBtn}
+                          onPress={() => {
+                            setCancellingSaleId(null);
+                            setCancelReasonInput('');
+                            setCancelSaleError(null);
+                          }}
+                          disabled={cancellingSale}
+                        >
+                          <Text style={styles.cancelCancelBtnText}>Huwag Ituloy</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.cancelConfirmBtn}
+                          onPress={() => handleCancelSale(sale.id)}
+                          disabled={cancellingSale}
+                        >
+                          {cancellingSale ? (
+                            <ActivityIndicator size="small" color="#ffffff" />
+                          ) : (
+                            <Text style={styles.cancelConfirmBtnText}>Kumpirmahin ang Pagkansela</Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.cancelSaleBtn}
+                      onPress={() => {
+                        setCancellingSaleId(sale.id);
+                        setCancelReasonInput('');
+                        setCancelSaleError(null);
+                      }}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.cancelSaleBtnText}>Kanselahin ang Benta</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
 
       <RepaymentModal
         db={db}
