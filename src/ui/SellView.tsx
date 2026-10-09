@@ -41,9 +41,12 @@ import {
 } from '../domain/sales.ts';
 import { CustomerValidationError, CreditValidationError } from '../domain/utang.ts';
 import { getReceiptAttachment, type ReceiptAttachment } from '../actions/receipt-actions.ts';
+import type { SpokenCartLine } from '../domain/spoken-order.ts';
 import { RepaymentModal } from './RepaymentModal.tsx';
 import { AgedUtangView } from './AgedUtangView.tsx';
 import { ReceiptReviewModal } from './ReceiptReviewModal.tsx';
+import { SpokenOrderModal } from './SpokenOrderModal.tsx';
+import { spokenOrderStyles } from './spoken-order-styles.ts';
 import { sellStyles as styles } from './sell-styles.ts';
 
 interface SellViewProps {
@@ -57,6 +60,7 @@ interface CartItem {
 
 export function SellView({ db }: SellViewProps): React.JSX.Element {
   const [agingVisible, setAgingVisible] = useState(false);
+  const [spokenOrderVisible, setSpokenOrderVisible] = useState(false);
   const [products, setProducts] = useState<ProductWithStock[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,7 +69,13 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash' | 'credit'>('cash');
   const [tenderInput, setTenderInput] = useState('');
   const [gcashRefInput, setGcashRefInput] = useState('');
-  const [preview, setPreview] = useState<SalePreview | null>(null);
+  const [previewState, setPreviewState] = useState<{ key: string; value: SalePreview } | null>(null);
+  const currentPreviewKey = JSON.stringify({
+    items: cart.map((item) => [item.product.id, item.quantity]),
+    tenderInput,
+    paymentMethod,
+  });
+  const preview = previewState?.key === currentPreviewKey ? previewState.value : null;
 
   // Credit / Utang state
   const [customers, setCustomers] = useState<CustomerWithBalance[]>([]);
@@ -180,11 +190,12 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
   // Recompute preview whenever cart or tender input changes
   useEffect(() => {
     if (cart.length === 0) {
-      setPreview(null);
+      setPreviewState(null);
       return;
     }
 
     let isCurrent = true;
+    const key = currentPreviewKey;
     let tenderCentavos = 0;
     if (paymentMethod === 'cash' && tenderInput.trim().length > 0) {
       try {
@@ -199,7 +210,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
       tenderCentavos,
     })
       .then((res) => {
-        if (isCurrent) setPreview(res);
+        if (isCurrent) setPreviewState({ key, value: res });
       })
       .catch((err) => {
         if (isCurrent) {
@@ -326,7 +337,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
 
       setCart([]);
       setTenderInput('');
-      setPreview(null);
+      setPreviewState(null);
       await loadProducts();
       await loadRecentSales();
     } catch (err) {
@@ -357,7 +368,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
 
       setCart([]);
       setGcashRefInput('');
-      setPreview(null);
+      setPreviewState(null);
       await loadPendingDrafts();
     } catch (err) {
       if (err instanceof InsufficientStockError || err instanceof SaleValidationError) {
@@ -423,7 +434,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
 
       setCart([]);
       setPartialPaidInput('');
-      setPreview(null);
+      setPreviewState(null);
       await loadProducts();
       await loadCustomers();
       await loadRecentSales();
@@ -709,6 +720,19 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
         <Text style={styles.sectionHeader}>
           Listahan ng Bibilhin {cart.length > 0 ? `(${cart.length})` : ''}
         </Text>
+
+        <TouchableOpacity
+          style={[spokenOrderStyles.launcher, (submitting || creatingCustomer || repayModalVisible) && spokenOrderStyles.launcherDisabled]}
+          onPress={() => {
+            if (submitInProgress.current || creatingCustomer || repayModalVisible) return;
+            setSpokenOrderVisible(true);
+          }}
+          disabled={submitting || creatingCustomer || repayModalVisible}
+          accessibilityRole="button"
+          accessibilityLabel="Idikta ang order o itama ang dami sa cart"
+        >
+          <Text style={spokenOrderStyles.launcherText}>🎙️ Idikta ang order / itama ang dami</Text>
+        </TouchableOpacity>
 
         {cart.length === 0 ? (
           <Text style={styles.emptyText}>Walang aytem sa listahan. Pumili sa itaas.</Text>
@@ -1277,6 +1301,22 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
             if (receiptTarget.kind === 'pending_draft') {
               setDraftReceipts((prev) => ({ ...prev, [receiptTarget.id]: attachment }));
             }
+          }}
+        />
+      )}
+      {spokenOrderVisible && (
+        <SpokenOrderModal
+          visible={spokenOrderVisible}
+          db={db}
+          initialCart={cart}
+          onClose={() => setSpokenOrderVisible(false)}
+          onApply={(nextCart: SpokenCartLine[]) => {
+            setCart(nextCart);
+            setTenderInput('');
+            setPartialPaidInput('');
+            setErrorMessage(null);
+            setSuccessInfo(null);
+            setPreviewState(null);
           }}
         />
       )}
