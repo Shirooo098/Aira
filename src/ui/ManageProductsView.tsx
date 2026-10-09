@@ -17,6 +17,7 @@ import { manageProductsStyles as styles } from './manage-products-styles.ts';
 import { StockActionModal, type StockActionModalMode } from './StockActionModal.tsx';
 import { AliasReviewModal } from './AliasReviewModal.tsx';
 import { CatalogDictationModal } from './CatalogDictationModal.tsx';
+import { StoreReportsView } from './StoreReportsView.tsx';
 
 interface ManageProductsViewProps {
   db: DatabaseSession;
@@ -41,6 +42,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
   const [activeStockMode, setActiveStockMode] = useState<StockActionModalMode>(null);
   const [aliasProduct, setAliasProduct] = useState<ProductWithStock | null>(null);
   const [catalogDictationOpen, setCatalogDictationOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'products' | 'reports'>('products');
 
   const refreshProducts = async () => {
     setLoadingList(true);
@@ -127,11 +129,38 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
     }
   };
 
+  if (activeTab === 'reports') {
+    return <StoreReportsView db={db} onBack={() => setActiveTab('products')} />;
+  }
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={{ flexDirection: 'row', backgroundColor: '#e2e8f0', borderRadius: 8, padding: 3, marginBottom: 14 }}>
+        <TouchableOpacity
+          style={[{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 }, activeTab === 'products' && { backgroundColor: '#0284c7' }]}
+          onPress={() => setActiveTab('products')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: true }}
+        >
+          <Text style={[{ fontSize: 13, fontWeight: '700', color: '#475569' }, activeTab === 'products' && { color: '#ffffff' }]}>
+            📦 Mga Produkto
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 }}
+          onPress={() => setActiveTab('reports')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: false }}
+        >
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
+            📊 Ulat ng Tindahan
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.header}>
         <Text style={styles.title}>Pamahalaan ang mga Produkto</Text>
         <Text style={styles.subtitle}>Magrehistro ng paninda at suriin bago i-save</Text>
