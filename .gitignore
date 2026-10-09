@@ -1,0 +1,17 @@
+# OS generated files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+.DS_Store
+
+# Logs
+*.log
+
+# Node & Build artifacts (for future RN/Expo code)
+node_modules/
+.expo/
+dist/
+build/
