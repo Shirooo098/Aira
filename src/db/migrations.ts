@@ -86,6 +86,22 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 4,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE product_aliases (
+          alias_normalized TEXT NOT NULL CHECK (length(alias_normalized) BETWEEN 1 AND 120),
+          product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          alias_text TEXT NOT NULL CHECK (length(trim(alias_text)) BETWEEN 1 AND 120),
+          created_at TEXT NOT NULL CHECK (length(trim(created_at)) > 0),
+          PRIMARY KEY (alias_normalized, product_id)
+        );
+
+        CREATE INDEX idx_product_aliases_product_id ON product_aliases (product_id);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {

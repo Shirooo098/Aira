@@ -4,21 +4,22 @@ import { DatabaseSync } from 'node:sqlite';
 import { NodeSqliteAdapter } from '../src/db/node-sqlite-adapter.ts';
 import { runMigrations } from '../src/db/migrations.ts';
 
-test('runMigrations creates schema_migrations, products, stock_levels, and inventory_movements tables', async (t) => {
+test('runMigrations creates schema_migrations, catalog, inventory, sales, and product_aliases tables', async (t) => {
   const syncDb = new DatabaseSync(':memory:');
   t.after(() => syncDb.close());
   const db = new NodeSqliteAdapter(syncDb);
 
   await runMigrations(db);
 
-  // Table schema_migrations exists and has versions 1, 2, and 3
+  // Table schema_migrations exists and has versions 1, 2, 3, and 4
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 3);
+  assert.equal(migrationRows.length, 4);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
   assert.equal(migrationRows[2]?.version, 3);
+  assert.equal(migrationRows[3]?.version, 4);
 
   // Tables exist and can be queried
   const productRows = await db.getAll('SELECT * FROM products;');
@@ -36,12 +37,37 @@ test('runMigrations creates schema_migrations, products, stock_levels, and inven
   const saleItemRows = await db.getAll('SELECT * FROM sale_items;');
   assert.equal(saleItemRows.length, 0);
 
+  const aliasRows = await db.getAll('SELECT * FROM product_aliases;');
+  assert.equal(aliasRows.length, 0);
+
   // Re-running migrations is idempotent
   await runMigrations(db);
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 3);
+  assert.equal(secondRunRows.length, 4);
+});
+
+test('the aliases table rejects blank or oversized aliases and duplicate product mappings', async (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  const db = new NodeSqliteAdapter(sqlite);
+  await runMigrations(db);
+
+  sqlite.exec(`INSERT INTO products VALUES
+    ('p1', 'Coke', '250 ml', 'bote', 1500, 'coke', '250 ml', 'bote', 'now', 'now')`);
+  const insertAlias = sqlite.prepare(
+    'INSERT INTO product_aliases (alias_normalized, product_id, alias_text, created_at) VALUES (?, ?, ?, ?)'
+  );
+
+  assert.throws(() => insertAlias.run('', 'p1', 'Coke maliit', 'now'), /CHECK constraint/);
+  assert.throws(() => insertAlias.run('coke', 'p1', '  ', 'now'), /CHECK constraint/);
+  assert.throws(() => insertAlias.run('x'.repeat(121), 'p1', 'x'.repeat(121), 'now'), /CHECK constraint/);
+  insertAlias.run('coke maliit', 'p1', 'Coke maliit', 'now');
+  assert.throws(
+    () => insertAlias.run('coke maliit', 'p1', 'Coke maliit', 'later'),
+    /UNIQUE constraint/
+  );
 });
 
 test('the schema rejects fractional and unsafe monetary values', async (t) => {
@@ -190,5 +216,5 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 4);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 5);
 });
