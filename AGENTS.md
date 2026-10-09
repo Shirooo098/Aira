@@ -1,15 +1,15 @@
-# AGENTS.md — Tindig Agent & Developer Guide
+# AGENTS.md — Aira Agent & Developer Guide
 
-Guidance for automated agents and developers working on Tindig.
+Guidance for automated agents and developers working on Aira.
 
 ## Project Overview
 
-**Tindig** is an offline, Filipino-speaking sari-sari store assistant for Android, targeted for a single owner-operated store on an **Oppo Reno6 Z 5G**.
+**Aira — Artificial Intelligence for Retail Assistance** is an offline, Filipino-speaking sari-sari store assistant for Android, targeted for a single owner-operated store on an **Oppo Reno6 Z 5G**.
 - **Working brand descriptor**: "Your offline, Filipino-speaking store assistant."
 - **Primary goal**: Fast, reliable price lookup, voice-driven sales drafting, owner-verified GCash logging, and utang (credit) ledger tracking without internet connectivity.
 - **Specification**: See [TINDIG-SPEC.md](TINDIG-SPEC.md) for full product scope and acceptance requirements.
 - **Ticket Plan**: See [.scratch/tindig/TICKET-PLAN.md](.scratch/tindig/TICKET-PLAN.md) for the 20-ticket dependency graph and wave breakdown.
-- **Tracker**: [Shirooo098/Tindig Issues](https://github.com/Shirooo098/Tindig/issues) (`ready-for-agent` label).
+- **Tracker**: [Shirooo098/Aira Issues](https://github.com/Shirooo098/Aira/issues) (`ready-for-agent` label).
 
 ---
 
@@ -54,6 +54,7 @@ Work is organized into 4 vertical-slice streams. Each stream lead owns the end-t
 
 ## Test Seams & Verification
 
+- **Expo Go Workflow**: Use Expo Go as the primary phone test path for the ticket #1 catalog foundation. Follow [README.md](README.md) for launch instructions. Use a development build when a later ticket needs custom native modules, and a standalone release APK for final airplane-mode acceptance.
 - **Business Logic Seam**: Write automated unit and integration tests executing application actions against a real temporary/in-memory SQLite database.
 - **Hardware Acceptance Seam**: Speech transcription latency, camera OCR extraction, and RAM/CPU usage must be validated on an actual physical Oppo Reno6 Z 5G running offline.
 - **Fixture Verification**: Test financial queries and report periods against deterministic fixtures with known totals for cash, GCash, credit, repayments, and reversals.

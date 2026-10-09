@@ -1,10 +1,10 @@
-# Tindig — implementation tickets
+# Aira — Artificial Intelligence for Retail Assistance: implementation tickets
 
-Published: 2026-10-09. Destination: https://github.com/Shirooo098/Tindig/issues (Issues #1 to #20 published with label `ready-for-agent`).
+Published: 2026-10-09. Destination: https://github.com/Shirooo098/Aira/issues (Issues #1 to #20 published with label `ready-for-agent`).
 
 D1 speech/device; D2 catalog/understanding; D3 transactions/data; D4 app integration/OCR/UI. Leads deliver vertical slices, not isolated layers. D3 coordinates migrations. Developer usernames are unknown.
 
-1. **Create an offline catalog and typed price lookup** — D4; blocked by none. Install Tindig, enter a product, restart the app, and retrieve its saved price by typing. [Acceptance criteria](issues/01.md)
+1. **Create an offline catalog and typed price lookup** — D4; blocked by none. Install Aira, enter a product, restart the app, and retrieve its saved price by typing. [Acceptance criteria](issues/01.md)
 
 2. **Transcribe Filipino speech with a bundled model** — D1; blocked by 1. Use push-to-talk and review an editable Filipino transcript on the phone without internet. [Acceptance criteria](issues/02.md)
 
