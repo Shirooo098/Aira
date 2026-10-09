@@ -173,6 +173,24 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 7,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        ALTER TABLE sales ADD COLUMN status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('completed', 'cancelled'));
+        ALTER TABLE sales ADD COLUMN cancelled_at TEXT;
+        ALTER TABLE sales ADD COLUMN cancellation_reason TEXT;
+
+        ALTER TABLE credit_entries ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled'));
+
+        ALTER TABLE credit_repayments ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'reversed'));
+        ALTER TABLE credit_repayments ADD COLUMN reversed_at TEXT;
+        ALTER TABLE credit_repayments ADD COLUMN reversal_reason TEXT;
+
+        ALTER TABLE repayment_allocations ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'reversed'));
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {

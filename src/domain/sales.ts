@@ -5,6 +5,20 @@ export class SaleValidationError extends Error {
   }
 }
 
+export class SaleAlreadyCancelledError extends SaleValidationError {
+  constructor(message: string = 'Kanselado na ang bentang ito') {
+    super(message);
+    this.name = 'SaleAlreadyCancelledError';
+  }
+}
+
+export class PaidCreditSaleCancellationError extends SaleValidationError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PaidCreditSaleCancellationError';
+  }
+}
+
 export class InsufficientStockError extends Error {
   public readonly insufficientItems: Array<{
     productId: string;

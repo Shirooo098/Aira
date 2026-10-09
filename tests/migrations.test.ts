@@ -11,17 +11,18 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
 
   await runMigrations(db);
 
-  // Table schema_migrations exists and has versions 1, 2, 3, 4, 5, and 6
+  // Table schema_migrations exists and has versions 1, 2, 3, 4, 5, 6, and 7
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 6);
+  assert.equal(migrationRows.length, 7);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
   assert.equal(migrationRows[2]?.version, 3);
   assert.equal(migrationRows[3]?.version, 4);
   assert.equal(migrationRows[4]?.version, 5);
   assert.equal(migrationRows[5]?.version, 6);
+  assert.equal(migrationRows[6]?.version, 7);
 
   // Tables exist and can be queried
   const productRows = await db.getAll('SELECT * FROM products;');
@@ -59,7 +60,7 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 6);
+  assert.equal(secondRunRows.length, 7);
 });
 
 test('the schema rejects fractional and unsafe monetary values', async (t) => {
@@ -227,7 +228,7 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 7);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 8);
 });
 
 test('Migration 5 constraints validate customers, credit_entries, and sales columns', async (t) => {
@@ -313,8 +314,9 @@ test('Migration 6 constraints validate credit_repayments and repayment_allocatio
 
   // Seed customer and credit entry
   sqlite.exec(`
-    INSERT INTO customers VALUES ('cust_1', 'Aling Nena', NULL, NULL, 'now', 'now');
-    INSERT INTO credit_entries VALUES ('entry_1', 'cust_1', 'opening_balance', NULL, 1000, 1000, 'Utang', NULL, 'now', 'now');
+    INSERT INTO customers (id, name, created_at, updated_at) VALUES ('cust_1', 'Aling Nena', 'now', 'now');
+    INSERT INTO credit_entries (id, customer_id, entry_type, sale_id, original_amount_centavos, remaining_amount_centavos, description, original_date, created_at, updated_at)
+    VALUES ('entry_1', 'cust_1', 'opening_balance', NULL, 1000, 1000, 'Utang', NULL, 'now', 'now');
   `);
 
   const insertRepayment = sqlite.prepare(`
@@ -356,4 +358,53 @@ test('Migration 6 constraints validate credit_repayments and repayment_allocatio
       /CHECK constraint/
     );
   }
+});
+
+test('Migration 7 constraints validate cancellation and reversal statuses', async (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  const db = new NodeSqliteAdapter(sqlite);
+  await runMigrations(db);
+
+  sqlite.exec(`
+    INSERT INTO customers VALUES ('cust_m7', 'Cardo', NULL, NULL, 'now', 'now');
+    INSERT INTO sales (id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, created_at, status)
+    VALUES ('sale_m7', 'cust_m7', 'cash', 1000, 1000, 0, 1000, 0, 'now', 'completed');
+  `);
+
+  // Invalid sale status
+  assert.throws(
+    () => sqlite.prepare("UPDATE sales SET status = 'invalid' WHERE id = 'sale_m7';").run(),
+    /CHECK constraint/
+  );
+
+  // Invalid credit entry status
+  sqlite.exec(`
+    INSERT INTO credit_entries (id, customer_id, entry_type, original_amount_centavos, remaining_amount_centavos, created_at, updated_at, status)
+    VALUES ('ce_m7', 'cust_m7', 'opening_balance', 500, 500, 'now', 'now', 'active');
+  `);
+  assert.throws(
+    () => sqlite.prepare("UPDATE credit_entries SET status = 'deleted' WHERE id = 'ce_m7';").run(),
+    /CHECK constraint/
+  );
+
+  // Invalid credit repayment status
+  sqlite.exec(`
+    INSERT INTO credit_repayments (id, customer_id, amount_centavos, payment_method, created_at, status)
+    VALUES ('repay_m7', 'cust_m7', 500, 'cash', 'now', 'active');
+  `);
+  assert.throws(
+    () => sqlite.prepare("UPDATE credit_repayments SET status = 'refunded' WHERE id = 'repay_m7';").run(),
+    /CHECK constraint/
+  );
+
+  // Invalid repayment allocation status
+  sqlite.exec(`
+    INSERT INTO repayment_allocations (id, repayment_id, credit_entry_id, allocated_centavos, created_at, status)
+    VALUES ('alloc_m7', 'repay_m7', 'ce_m7', 500, 'now', 'active');
+  `);
+  assert.throws(
+    () => sqlite.prepare("UPDATE repayment_allocations SET status = 'void' WHERE id = 'alloc_m7';").run(),
+    /CHECK constraint/
+  );
 });

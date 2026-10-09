@@ -9,6 +9,8 @@ import type {
 import {
   SaleValidationError,
   InsufficientStockError,
+  SaleAlreadyCancelledError,
+  PaidCreditSaleCancellationError,
   calculateSubtotal,
   calculateSaleTotal,
   calculateChange,
@@ -42,6 +44,9 @@ interface SaleRow {
   credit_centavos?: number | null;
   reference_number: string | null;
   idempotency_key: string | null;
+  status?: 'completed' | 'cancelled';
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
   created_at: string;
 }
 
@@ -840,7 +845,10 @@ export async function getSaleById(
   saleId: string
 ): Promise<Sale | null> {
   const row = await db.getFirst<SaleRow>(
-    'SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at FROM sales WHERE id = ?;',
+    `SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos,
+            paid_centavos, credit_centavos, reference_number, idempotency_key, status,
+            cancelled_at, cancellation_reason, created_at
+     FROM sales WHERE id = ?;`,
     [saleId]
   );
   if (!row) {
@@ -858,6 +866,9 @@ export async function getSaleById(
     paidCentavos: row.paid_centavos ?? row.total_centavos,
     creditCentavos: row.credit_centavos ?? 0,
     referenceNumber: row.reference_number,
+    status: row.status ?? 'completed',
+    cancelledAt: row.cancelled_at ?? null,
+    cancellationReason: row.cancellation_reason ?? null,
     createdAt: row.created_at,
     items,
   };
@@ -868,7 +879,9 @@ export async function getRecentSales(
   limit: number = 20
 ): Promise<Sale[]> {
   const rows = await db.getAll<SaleRow>(
-    `SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at
+    `SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos,
+            paid_centavos, credit_centavos, reference_number, idempotency_key, status,
+            cancelled_at, cancellation_reason, created_at
      FROM sales
      ORDER BY created_at DESC, rowid DESC
      LIMIT ?;`,
@@ -888,10 +901,175 @@ export async function getRecentSales(
       paidCentavos: row.paid_centavos ?? row.total_centavos,
       creditCentavos: row.credit_centavos ?? 0,
       referenceNumber: row.reference_number,
+      status: row.status ?? 'completed',
+      cancelledAt: row.cancelled_at ?? null,
+      cancellationReason: row.cancellation_reason ?? null,
       createdAt: row.created_at,
       items,
     });
   }
 
   return sales;
+}
+
+export async function cancelSale(
+  db: DatabaseSession,
+  params: {
+    saleId: string;
+    reason?: string;
+  }
+): Promise<{
+  sale: Sale;
+  restoredItems: Array<{ productId: string; restoredQuantity: number; newStock: number }>;
+}> {
+  if (!params.saleId || params.saleId.trim().length === 0) {
+    throw new SaleValidationError('Kailangang maglagay ng ID ng benta na kakanselahin');
+  }
+
+  const sale = await getSaleById(db, params.saleId.trim());
+  if (!sale) {
+    throw new SaleValidationError(`Hindi mahanap ang benta na may ID: ${params.saleId}`);
+  }
+
+  if (sale.status === 'cancelled') {
+    throw new SaleAlreadyCancelledError(
+      `Kanselado na ang bentang ito${sale.cancelledAt ? ` noong ${sale.cancelledAt}` : ''}`
+    );
+  }
+
+  // Check if this sale has an associated credit entry
+  const creditEntry = await db.getFirst<{
+    id: string;
+    original_amount_centavos: number;
+    remaining_amount_centavos: number;
+    status: string;
+  }>(
+    'SELECT id, original_amount_centavos, remaining_amount_centavos, status FROM credit_entries WHERE sale_id = ?;',
+    [sale.id]
+  );
+
+  if (creditEntry) {
+    // Check if any active repayments were allocated to this credit entry
+    const activeAllocations = await db.getAll<{ id: string; allocated_centavos: number }>(
+      `SELECT id, allocated_centavos 
+       FROM repayment_allocations 
+       WHERE credit_entry_id = ? AND status != 'reversed';`,
+      [creditEntry.id]
+    );
+
+    if (
+      activeAllocations.length > 0 ||
+      creditEntry.remaining_amount_centavos < creditEntry.original_amount_centavos
+    ) {
+      throw new PaidCreditSaleCancellationError(
+        'Hindi maaaring kanselahin ang benta dahil may naibayad na rito. Kailangan munang i-reverse ang mga bayad bago kanselahin ang benta.'
+      );
+    }
+  }
+
+  const now = new Date().toISOString();
+  const reason = params.reason?.trim() ? params.reason.trim() : null;
+
+  // Aggregate quantities to restore per product
+  const productQuantities = new Map<string, number>();
+  for (const item of sale.items) {
+    productQuantities.set(
+      item.productId,
+      (productQuantities.get(item.productId) ?? 0) + item.quantity
+    );
+  }
+
+  await db.exec('BEGIN IMMEDIATE');
+  try {
+    // 1. Mark sale as cancelled
+    await db.run(
+      `UPDATE sales
+       SET status = 'cancelled',
+           cancelled_at = ?,
+           cancellation_reason = ?
+       WHERE id = ?;`,
+      [now, reason, sale.id]
+    );
+
+    // 2. If credit entry exists, mark as cancelled and zero remaining debt
+    if (creditEntry) {
+      await db.run(
+        `UPDATE credit_entries
+         SET status = 'cancelled',
+             remaining_amount_centavos = 0,
+             updated_at = ?
+         WHERE id = ?;`,
+        [now, creditEntry.id]
+      );
+    }
+
+    // 3. Restore stock exactly once and record inventory movement
+    const restoredItems: Array<{ productId: string; restoredQuantity: number; newStock: number }> = [];
+
+    for (const [productId, qtyToRestore] of productQuantities.entries()) {
+      const stockRow = await db.getFirst<StockRow>(
+        'SELECT product_id, quantity FROM stock_levels WHERE product_id = ?;',
+        [productId]
+      );
+
+      const prevStock = stockRow ? stockRow.quantity : 0;
+      const newStock = prevStock + qtyToRestore;
+      const movementId = generateMovementId();
+
+      if (stockRow) {
+        await db.run(
+          `UPDATE stock_levels SET quantity = ?, updated_at = ? WHERE product_id = ?;`,
+          [newStock, now, productId]
+        );
+      } else {
+        await db.run(
+          `INSERT INTO stock_levels (product_id, quantity, updated_at) VALUES (?, ?, ?);`,
+          [productId, newStock, now]
+        );
+      }
+
+      await db.run(
+        `INSERT INTO inventory_movements (
+           id, product_id, movement_type, quantity_delta,
+           previous_quantity, new_quantity, note, created_at
+         ) VALUES (?, ?, 'sale_cancellation', ?, ?, ?, ?, ?);`,
+        [
+          movementId,
+          productId,
+          qtyToRestore,
+          prevStock,
+          newStock,
+          reason ? `Kanseladong benta (${sale.id}): ${reason}` : `Kanseladong benta: ${sale.id}`,
+          now,
+        ]
+      );
+
+      restoredItems.push({
+        productId,
+        restoredQuantity: qtyToRestore,
+        newStock,
+      });
+    }
+
+    await db.exec('COMMIT');
+
+    const updatedSale: Sale = {
+      ...sale,
+      status: 'cancelled',
+      cancelledAt: now,
+      cancellationReason: reason,
+    };
+
+    return {
+      sale: updatedSale,
+      restoredItems,
+    };
+  } catch (error) {
+    try {
+      await db.exec('ROLLBACK');
+    } catch {
+      // rollback error suppressed
+    }
+    throw error;
+  }
 }

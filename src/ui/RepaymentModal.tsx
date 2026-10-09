@@ -20,9 +20,14 @@ import {
   previewRepaymentAllocation,
   recordRepayment,
   getCustomerLedger,
+  reverseRepayment,
 } from '../actions/utang-actions.ts';
 import { parseCentavos, formatCentavos } from '../domain/money.ts';
-import { OverpaymentError, CreditValidationError } from '../domain/utang.ts';
+import {
+  OverpaymentError,
+  CreditValidationError,
+  RepaymentAlreadyReversedError,
+} from '../domain/utang.ts';
 import { repaymentModalStyles as styles } from './repayment-modal-styles.ts';
 
 interface RepaymentModalProps {
@@ -58,6 +63,12 @@ export function RepaymentModal({
   const submitInProgress = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Reversal state
+  const [reversingRepaymentId, setReversingRepaymentId] = useState<string | null>(null);
+  const [reversalReasonInput, setReversalReasonInput] = useState('');
+  const [reversing, setReversing] = useState(false);
+  const [historyErrorMessage, setHistoryErrorMessage] = useState<string | null>(null);
+
   // Reset form when modal opens or customer changes
   useEffect(() => {
     if (!visible || !customer) {
@@ -69,6 +80,9 @@ export function RepaymentModal({
       setPreviewError(null);
       setErrorMessage(null);
       setActiveTab('repay');
+      setReversingRepaymentId(null);
+      setReversalReasonInput('');
+      setHistoryErrorMessage(null);
       return;
     }
 
@@ -79,6 +93,9 @@ export function RepaymentModal({
     setPreview(null);
     setPreviewError(null);
     setErrorMessage(null);
+    setReversingRepaymentId(null);
+    setReversalReasonInput('');
+    setHistoryErrorMessage(null);
 
     // Fetch customer ledger for history tab
     let isCurrent = true;
@@ -210,6 +227,41 @@ export function RepaymentModal({
     } finally {
       submitInProgress.current = false;
       setSubmitting(false);
+    }
+  };
+
+  const handleConfirmReverse = async (repaymentId: string) => {
+    if (reversing) return;
+    setReversing(true);
+    setHistoryErrorMessage(null);
+
+    try {
+      const res = await reverseRepayment(db, {
+        repaymentId,
+        reason: reversalReasonInput.trim().length > 0 ? reversalReasonInput.trim() : undefined,
+      });
+
+      setReversingRepaymentId(null);
+      setReversalReasonInput('');
+
+      // Reload ledger
+      if (customer) {
+        const ledger = await getCustomerLedger(db, customer.id);
+        setLedgerEntries(ledger.creditEntries);
+        setLedgerRepayments(ledger.repayments);
+      }
+
+      onSuccess(
+        `Na-reverse ang bayad na ₱${formatCentavos(res.repayment.amountCentavos)}. Naibalik ang utang.`
+      );
+    } catch (err) {
+      if (err instanceof RepaymentAlreadyReversedError || err instanceof CreditValidationError) {
+        setHistoryErrorMessage(err.message);
+      } else {
+        setHistoryErrorMessage('Nagkaroon ng aberya sa pag-reverse ng bayad.');
+      }
+    } finally {
+      setReversing(false);
     }
   };
 
@@ -527,6 +579,13 @@ export function RepaymentModal({
                     {/* Past Repayments */}
                     <View style={styles.historySection}>
                       <Text style={styles.sectionHeading}>Mga Naibayad ({ledgerRepayments.length}):</Text>
+
+                      {historyErrorMessage && (
+                        <View style={[styles.errorBox, { marginBottom: 10 }]} accessibilityRole="alert">
+                          <Text style={styles.errorText}>{historyErrorMessage}</Text>
+                        </View>
+                      )}
+
                       {ledgerRepayments.length === 0 ? (
                         <Text style={styles.emptyHistoryText}>Wala pang naitalang bayad.</Text>
                       ) : (
@@ -536,14 +595,92 @@ export function RepaymentModal({
                               <Text style={styles.historyTitle}>
                                 Bayad ({rep.paymentMethod.toUpperCase()})
                               </Text>
-                              <Text style={[styles.historyAmount, { color: '#059669' }]}>
-                                +₱{formatCentavos(rep.amountCentavos)}
-                              </Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                {rep.status === 'reversed' && (
+                                  <View style={styles.reversedBadge}>
+                                    <Text style={styles.reversedBadgeText}>Na-reverse</Text>
+                                  </View>
+                                )}
+                                <Text
+                                  style={[
+                                    styles.historyAmount,
+                                    {
+                                      color: rep.status === 'reversed' ? '#94a3b8' : '#059669',
+                                      textDecorationLine: rep.status === 'reversed' ? 'line-through' : 'none',
+                                    },
+                                  ]}
+                                >
+                                  +₱{formatCentavos(rep.amountCentavos)}
+                                </Text>
+                              </View>
                             </View>
                             <Text style={styles.historyDate}>
                               {new Date(rep.createdAt).toLocaleString()}
                               {rep.referenceNumber ? ` • Ref: ${rep.referenceNumber}` : ''}
                             </Text>
+                            {rep.status === 'reversed' && (
+                              <Text style={styles.reversalReasonText}>
+                                Na-reverse{rep.reversedAt ? ` noong ${new Date(rep.reversedAt).toLocaleDateString()}` : ''}
+                                {rep.reversalReason ? `: "${rep.reversalReason}"` : ''}
+                              </Text>
+                            )}
+
+                            {/* Reversal action if still active */}
+                            {rep.status !== 'reversed' && (
+                              <>
+                                {reversingRepaymentId === rep.id ? (
+                                  <View style={styles.reversalConfirmBox}>
+                                    <Text style={styles.reversalConfirmPrompt}>
+                                      I-reverse ang bayad na ₱{formatCentavos(rep.amountCentavos)}? Ibabalik ito sa utang ng suki.
+                                    </Text>
+                                    <TextInput
+                                      style={styles.reversalInput}
+                                      placeholder="Dahilan ng pag-reverse (hal. maling encode)"
+                                      placeholderTextColor="#9ca3af"
+                                      value={reversalReasonInput}
+                                      onChangeText={setReversalReasonInput}
+                                      editable={!reversing}
+                                    />
+                                    <View style={styles.reversalActionsRow}>
+                                      <TouchableOpacity
+                                        style={styles.reversalCancelBtn}
+                                        onPress={() => {
+                                          setReversingRepaymentId(null);
+                                          setReversalReasonInput('');
+                                          setHistoryErrorMessage(null);
+                                        }}
+                                        disabled={reversing}
+                                      >
+                                        <Text style={styles.reversalCancelBtnText}>Kanselahin</Text>
+                                      </TouchableOpacity>
+                                      <TouchableOpacity
+                                        style={styles.reversalConfirmBtn}
+                                        onPress={() => handleConfirmReverse(rep.id)}
+                                        disabled={reversing}
+                                      >
+                                        {reversing ? (
+                                          <ActivityIndicator size="small" color="#ffffff" />
+                                        ) : (
+                                          <Text style={styles.reversalConfirmBtnText}>Kumpirmahin ang Reversal</Text>
+                                        )}
+                                      </TouchableOpacity>
+                                    </View>
+                                  </View>
+                                ) : (
+                                  <TouchableOpacity
+                                    style={styles.reverseBtn}
+                                    onPress={() => {
+                                      setReversingRepaymentId(rep.id);
+                                      setReversalReasonInput('');
+                                      setHistoryErrorMessage(null);
+                                    }}
+                                    accessibilityRole="button"
+                                  >
+                                    <Text style={styles.reverseBtnText}>I-reverse ang Bayad</Text>
+                                  </TouchableOpacity>
+                                )}
+                              </>
+                            )}
                           </View>
                         ))
                       )}
