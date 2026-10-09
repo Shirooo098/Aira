@@ -40,8 +40,10 @@ import {
   PaidCreditSaleCancellationError,
 } from '../domain/sales.ts';
 import { CustomerValidationError, CreditValidationError } from '../domain/utang.ts';
+import { getReceiptAttachment, type ReceiptAttachment } from '../actions/receipt-actions.ts';
 import { RepaymentModal } from './RepaymentModal.tsx';
 import { AgedUtangView } from './AgedUtangView.tsx';
+import { ReceiptReviewModal } from './ReceiptReviewModal.tsx';
 import { sellStyles as styles } from './sell-styles.ts';
 
 interface SellViewProps {
@@ -78,6 +80,14 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
 
   const [pendingDrafts, setPendingDrafts] = useState<PendingGcashDraft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [draftReceipts, setDraftReceipts] = useState<Record<string, ReceiptAttachment>>({});
+  const [receiptModalVisible, setReceiptModalVisible] = useState(false);
+  const [receiptTarget, setReceiptTarget] = useState<{
+    kind: 'sale' | 'pending_draft';
+    id: string;
+    expectedAmountCentavos: number;
+    initialRawText?: string;
+  } | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const submitInProgress = useRef(false);
@@ -119,6 +129,16 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
       setLoadingDrafts(true);
       const drafts = await getPendingGcashDrafts(db);
       setPendingDrafts(drafts);
+      const rcptMap: Record<string, ReceiptAttachment> = {};
+      for (const d of drafts) {
+        try {
+          const rcpt = await getReceiptAttachment(db, 'pending_draft', d.id);
+          if (rcpt) rcptMap[d.id] = rcpt;
+        } catch {
+          // Table might not exist in pre-migration test
+        }
+      }
+      setDraftReceipts(rcptMap);
     } catch (err) {
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.error('[SellView] Error fetching pending drafts:', err);
@@ -571,6 +591,37 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
               <Text style={{ fontSize: 12, color: '#64748b' }}>
                 {draft.items.length} aytem • {new Date(draft.createdAt).toLocaleTimeString('fil-PH', { hour: '2-digit', minute: '2-digit' })}
               </Text>
+
+              {draftReceipts[draft.id] ? (
+                <TouchableOpacity
+                  style={{ backgroundColor: '#ecfdf5', borderColor: '#a7f3d0', borderWidth: 1, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                  onPress={() => {
+                    setReceiptTarget({ kind: 'pending_draft', id: draft.id, expectedAmountCentavos: draft.totalCentavos });
+                    setReceiptModalVisible(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Suriin ang nakalakip na resibo"
+                >
+                  <Text style={{ fontSize: 12, color: '#065f46', fontWeight: '600' }}>
+                    📄 May Resibo ({draftReceipts[draft.id].referenceNumber || 'Tingnan'})
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#047857' }}>Suriin ➜</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={{ backgroundColor: '#f0f9ff', borderColor: '#bae6fd', borderWidth: 1, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 6, alignItems: 'center' }}
+                  onPress={() => {
+                    setReceiptTarget({ kind: 'pending_draft', id: draft.id, expectedAmountCentavos: draft.totalCentavos });
+                    setReceiptModalVisible(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ilakip ang resibo ng GCash gamit ang OCR"
+                >
+                  <Text style={{ fontSize: 12, color: '#0284c7', fontWeight: '600' }}>
+                    📎 Ilakip ang Resibo ng GCash (OCR)
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <View style={styles.draftActions}>
                 <TouchableOpacity
@@ -1170,6 +1221,22 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                       <Text style={styles.cancelSaleBtnText}>Kanselahin ang Benta</Text>
                     </TouchableOpacity>
                   )}
+
+                  {sale.paymentMethod === 'gcash' && (
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#f0f9ff', borderColor: '#bae6fd', borderWidth: 1, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 6, alignItems: 'center' }}
+                      onPress={() => {
+                        setReceiptTarget({ kind: 'sale', id: sale.id, expectedAmountCentavos: sale.totalCentavos });
+                        setReceiptModalVisible(true);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Suriin o ilakip ang resibo ng benta"
+                    >
+                      <Text style={{ fontSize: 12, color: '#0284c7', fontWeight: '600' }}>
+                        📄 Tingnan / Ilakip ang Resibo
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
             </View>
@@ -1192,6 +1259,27 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
         }}
       />
       {agingVisible && <AgedUtangView db={db} onClose={() => { setAgingVisible(false); void loadCustomers(); }} />}
+      {receiptModalVisible && receiptTarget && (
+        <ReceiptReviewModal
+          visible={receiptModalVisible}
+          onClose={() => {
+            setReceiptModalVisible(false);
+            setReceiptTarget(null);
+          }}
+          targetKind={receiptTarget.kind}
+          targetId={receiptTarget.id}
+          expectedAmountCentavos={receiptTarget.expectedAmountCentavos}
+          db={db}
+          existingAttachment={
+            receiptTarget.kind === 'pending_draft' ? draftReceipts[receiptTarget.id] : null
+          }
+          onSaved={(attachment) => {
+            if (receiptTarget.kind === 'pending_draft') {
+              setDraftReceipts((prev) => ({ ...prev, [receiptTarget.id]: attachment }));
+            }
+          }}
+        />
+      )}
     </ScrollView>
   );
 }

@@ -14,6 +14,31 @@
 - 2026-10-10 [TOOL] TypeScript, 162 tests, direct dependency resolution and Expo Android prebuild pass. No OCR UI/persistence or phone-quality completion claim; no commit/push requested. See docs/TICKET-10-RECEIPTS.md for remaining work and native verification.
 - 2026-10-10 [TOOL] Android autolinking includes TextRecognitionPackage; regenerated manifest preserves camera and speech permissions; compatibility patch is repeatable. Online APK build stalled and was stopped. Offline arm64 debug build failed configuring existing whisper.rn because Android Gradle plugin 7.2.1 and related Maven artifacts are uncached. APK/OCR runtime acceptance remains unverified.
 
+## Ticket #19 — review notebook OCR proposals before catalog import
+
+- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
+- 2026-10-10 [TOOL] Created feature branch `feat/#19-notebook-ocr`. Conducted handwriting feasibility spike documenting raster photo limitations vs vector Digital Ink strokes in `docs/TICKET-19-NOTEBOOK.md`.
+- 2026-10-10 [TOOL] Built notebook row extraction domain (`src/domain/notebook.ts`) parsing name, variant, unit, and integer centavos with clarification requirements.
+- 2026-10-10 [TOOL] Implemented action layer (`src/actions/notebook-actions.ts`) matching existing catalog products, updating prices while strictly preserving physical `stock_levels`, and deduplicating rescans.
+- 2026-10-10 [TOOL] Created owner review modal (`src/ui/NotebookReviewModal.tsx`) integrated into `ManageProductsView.tsx` with editable fields and price diff banners.
+- 2026-10-10 [TOOL] Verification: 176/176 automated tests passing (`npm test`), `npm run typecheck` passes with 0 errors, and `npx expo export --platform android` bundles cleanly (692 modules).
+
+## Ticket #10 — attach, extract and find GCash receipts
+
+- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
+- 2026-10-10 [TOOL] Created feature branch `feat/#10-gcash-receipt-ocr`. Implemented Migration 9 (`receipt_attachments`), persistence and search action layer (`src/actions/receipt-actions.ts`), and OCR service abstraction (`src/services/receipt-ocr-service.ts`).
+- 2026-10-10 [TOOL] Built atomic draft-to-sale receipt attachment transfer in `confirmGcashSale` (`src/actions/sales-actions.ts`).
+- 2026-10-10 [TOOL] Implemented owner review modal (`src/ui/ReceiptReviewModal.tsx`) integrated with `SellView.tsx` showing editable OCR proposals, amount mismatch warnings, and duplicate reference alerts without automated payment confirmation.
+- 2026-10-10 [TOOL] Verification: 171/171 automated tests passing (`npm test`), `npm run typecheck` passes cleanly with 0 errors, and `npx expo export --platform android` bundles successfully (689 modules).
+
+## Ticket #15 — store reports across calendar periods
+
+- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
+- 2026-10-10 [TOOL] Created feature branch `feat/#15-store-reports`. Implemented period calculation domain (`src/domain/reports.ts`) for Asia/Manila (UTC+8) calendar boundaries: Today, Monday-start Week, Month, current plus prior five months, and Year, all bounded by now.
+- 2026-10-10 [TOOL] Implemented report actions (`src/actions/report-actions.ts`) querying real SQLite metrics: Net sales, cancelled sales exclusions, cash/GCash collections (including partial credit sales and non-reversed repayments), new credit, current outstanding debt, stock now snapshot, and units sold ranking.
+- 2026-10-10 [TOOL] Implemented reactive UI slice (`src/ui/StoreReportsView.tsx`) integrated with tab switcher in `src/ui/ManageProductsView.tsx` with honest empty states and no unsupported profit claims.
+- 2026-10-10 [TOOL] Verification: 166/166 automated tests passing (`tests/store-reports.test.ts`), `npm run typecheck` (tsc --noEmit) passes cleanly with 0 errors, `npx expo export --platform android` bundles successfully (686 modules).
+
 ## Ticket #14 — aged utang
 
 - 2026-10-10 [USER] Requested pull of current main and development of ticket #14.
@@ -22,20 +47,37 @@
 - 2026-10-10 [TOOL] Final tests: 162/162 pass, including 5 new aging suites covering real SQLite repayment/reversal/cancellation/restart and calendar boundaries. TypeScript passes. Android export passes; physical Oppo accessibility, foreground/midnight refresh and standalone offline acceptance remain pending. See docs/TICKET-14-AGING.md.
 
 ## Snapshot
-- 2026-10-10 [USER] Goal: implement D4 tickets using astra-orchestrator and implement skills.
-- 2026-10-10 [TOOL] Ticket #1 ("Create an offline catalog and typed price lookup") implementation and full verification complete.
-- 2026-10-10 [USER] User switched role to Developer 3 ("D3 — Transactions, Inventory & Utang Ledger / Data Coordinator") and requested ticket implementation.
-- 2026-10-10 [TOOL] Ticket #7 ("Complete a cash sale with consistent inventory") merged via PR #23.
-- 2026-10-10 [TOOL] Created feature branch `feat/#9-owner-confirmed-gcash` on the unblocked frontier for Ticket #9 ("Record owner-confirmed GCash purchases").
-- 2026-10-10 [TOOL] Ticket #9 implementation complete: Migration v4 (`pending_gcash_drafts` and `reference_number` column on `sales`), transactional drafting and confirmation action layer (`createPendingGcashDraft`, `confirmGcashSale`, `cancelPendingGcashDraft`), and complete UI slice in `SellView.tsx` with payment method toggle (Cash/GCash), owner confirmation banner (anti-screenshot-fraud warning), and pending draft queue.
-- 2026-10-10 [TOOL] Verification: 42/42 automated tests pass across all test suites, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (652 modules).
+- 2026-10-10 [USER] Requested completion of Developer 4 (App Shell, OCR & Integration Lead) role and ticket status verification under AGENTS.md rules.
 - 2026-10-10 [TOOL] Ticket verification and status audit complete across all 20 tickets:
-  - 11 tickets verified CLOSED & merged to main: #1 (catalog/lookup), #2 (offline Whisper), #3 (aliases), #4 (stock/deliveries), #5 (voice price lookup), #6 (dictated catalog), #7 (cash sale/inventory), #9 (owner-confirmed GCash), #11 (credit sales), #12 (oldest-first repayments), #13 (reversals/cancellations).
-  - Ticket #6 closed on GitHub and in `.scratch/tindig/issues/06.md` after verifying merge commit `71e341c` and 157 passing tests.
-  - 1 ticket IN PROGRESS: #10 (receipt extraction first slice merged to main; native OCR & storage slice pending approval).
-  - 5 tickets UNBLOCKED / READY FOR AGENT: #8 (voice order drafting), #14 (aged utang dashboard), #15 (calendar period reports), #16 (guarded local agent proof), #19 (notebook OCR review).
-  - 3 tickets BLOCKED: #17 (blocked by #15, #16), #18 (blocked by #17), #20 (blocked by #8, #10, #14, #18).
-  - Verification suite: 157/157 tests passing (`npm test`), 0 TypeScript errors (`npm run typecheck`).
+  - 15 tickets verified CLOSED & merged to main:
+    - #1 (offline catalog & lookup - D4)
+    - #2 (offline Whisper speech - D1)
+    - #3 (product aliases - D2)
+    - #4 (stock counts & deliveries - D3)
+    - #5 (voice price lookup - D1)
+    - #6 (dictated catalog - D2)
+    - #7 (cash sales with inventory - D3)
+    - #9 (owner-confirmed GCash - D3)
+    - #10 (attach & extract GCash receipts - D4)
+    - #11 (customer credit sales - D3)
+    - #12 (oldest-first repayments - D3)
+    - #13 (cancellations & reversals - D3)
+    - #14 (aged utang dashboard - D4)
+    - #15 (calendar period store reports - D4)
+    - #19 (notebook OCR review spike - D4)
+  - 2 tickets UNBLOCKED / READY FOR AGENT (Frontier for D2):
+    - #8 (speak and correct order before checkout - D2; unblocked by #5, #7)
+    - #16 (prove bundled local agent with guarded tool request - D2; unblocked by #1)
+  - 2 tickets BLOCKED (D2):
+    - #17 (explain selected report in Filipino - D2; blocked by #15, #16)
+    - #18 (prepare restock checklist - D2; blocked by #17)
+  - 1 ticket BLOCKED (Final Milestone):
+    - #20 (verify offline demo & submission evidence - D4; blocked by #6, #8, #10, #14, #18)
+  - Developer 4 completion status:
+    - All 5 implementation tickets owned by D4 (#1, #10, #14, #15, #19) are 100% COMPLETE, merged to `main` via PRs, and closed on GitHub.
+    - Ticket #20 is strictly blocked under AGENTS.md Frontier rules until D2 completes tickets #8 and #18.
+  - Verification suite: 176/176 tests passing (`npm test`), 0 TypeScript errors (`npm run typecheck`), Android bundle exports cleanly (692 modules).
+
 
 
 

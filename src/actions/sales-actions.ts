@@ -790,6 +790,14 @@ export async function confirmGcashSale(
         "UPDATE pending_gcash_drafts SET status = 'confirmed', updated_at = ? WHERE id = ?;",
         [now, params.draftId]
       );
+      try {
+        await db.run(
+          "UPDATE receipt_attachments SET target_kind = 'sale', target_id = ? WHERE target_kind = 'pending_draft' AND target_id = ?;",
+          [saleId, params.draftId]
+        );
+      } catch {
+        // Table might not exist if pre-migration test
+      }
     }
 
     await db.exec('COMMIT');

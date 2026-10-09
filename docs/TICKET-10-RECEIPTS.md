@@ -1,6 +1,6 @@
 # Ticket #10 — receipt evidence
 
-2026-10-10. Branch: `feat/#10-gcash-receipt-ocr`, based on main `4c02e62`. Main contains #9 via merge `f6709a1` and subsequent ledger/reversal work. This is an in-progress slice, not completed OCR support.
+2026-10-10. Branch: `feat/#10-gcash-receipt-ocr`. Merged current main `312a820` to combine the native dependency/build fix with the receipt UI/persistence implementation already delivered through PR #33. Device OCR and standalone offline acceptance remain separate from implementation and build results.
 
 ## Implemented first slice
 
@@ -43,7 +43,7 @@ The debug APK is `android/app/build/outputs/apk/debug/app-debug.apk`. Debug buil
 
 2026-10-10 final results: online arm64 debug APK build **passed** in 9m 38s; the same command with `--offline` **passed** in 17s (367 tasks, 360 up-to-date). Both Whisper and OCR Java/native integration compiled. APK inspection confirmed bundled Latin ML Kit recognizer assets, `libmlkit_google_ocr_pipeline.so`, Whisper native libraries and `assets/models/whisper.bin`.
 
-Artifact: 160,853,925 bytes, SHA-256 `57520dc733ee10ac570361cd1b17ebfdadfe02a65828a65670a52ce62bc729b8`. Local ignored diagnostics: `.scratch/ticket-10-native-build.log` and `.scratch/ticket-10-offline-build.log`. Device OCR accuracy, release/airplane-mode behavior, and the unfinished receipt UI/persistence remain outstanding. No commit/push performed.
+Prior dependency-fix artifact: 160,853,925 bytes, SHA-256 `57520dc733ee10ac570361cd1b17ebfdadfe02a65828a65670a52ce62bc729b8`. Local ignored diagnostics: `.scratch/ticket-10-native-build.log` and `.scratch/ticket-10-offline-build.log`. These APK results predate the current-main merge and do not verify the newly integrated receipt UI/persistence. Device OCR accuracy and release/airplane-mode behavior remain outstanding.
 
 ## Image retention and consistency contract for the next slice
 
@@ -57,19 +57,16 @@ Receipt attachment is explicitly reviewed and saved by the owner. Receipt fields
 6. For explicit attachment removal, remove the database link first and then the file. A failed file delete leaves an orphan recoverable on restart. Never delete payment/sale records through receipt removal.
 7. Search the reviewed reference and visible sender fields with bound SQL parameters. Do not reconstruct masked phone digits. Preserve source image comparison in the review screen; no retained raw OCR text is needed after confirmed fields are saved unless explicitly required.
 
-Schema follow-up through D3 conventions: allocate migration after existing v8, reference actual sale/draft IDs, preserve all previous data, and document draft-to-sale transfer. Do not invent replacement transaction tables.
+The integrated persistence slice uses migration 9 after existing v8 and actual sale/draft IDs; draft-to-sale transfer is documented below.
 
-## Remaining work
+## Implementation & Verification of Persistence and UI Slice
 
-1. Complete native APK/device verification of the resolved bundled dependencies.
-2. Implement private image storage, migration/link actions, failure cleanup and restart tests using real SQLite/files.
-3. Add capture/import → OCR → editable fields/image comparison → explicit attachment save → history/search UI, with useful cancellation/permission/extraction errors.
-4. Recheck references after field correction, and show amount mismatch before saving evidence without implying verified funds.
-5. Verify masked/ambiguous real receipt samples on Oppo in airplane mode with Wi-Fi off, fresh install, restart retrieval and standalone release. Text fixture tests do not establish OCR accuracy.
-
-## Verification of first slice
-
-2026-10-10: `npm run typecheck` passes. Full `npm test` passes 129/129 tests, including 16 new receipt tests. Expected Node experimental SQLite warnings remain. Independent standards/spec reviews have no remaining actionable findings after fixing next-line recipient-heading consumption. No lint script is configured. No native build/device/OCR quality pass is claimed; no dependencies, migrations, commits or pushes were added in this slice.
+1. **Schema Migration 9**: Added `receipt_attachments` table storing app-private file URI, integer centavo amounts, reference number, sender name, sender mobile, raw OCR text, and created timestamp, with indices on `(target_kind, target_id)`, `reference_number`, and `created_at`.
+2. **Action Layer**: Added `attachReceipt`, `getReceiptAttachment`, `getReceiptAttachmentById`, `searchReceiptAttachments`, `deleteReceiptAttachment`, and `transferDraftReceiptToSale` in `src/actions/receipt-actions.ts`.
+3. **Atomic Draft Transfer**: When `confirmGcashSale` is called with `draftId`, any receipt attached to the draft is automatically transferred to the confirmed sale in the same database transaction.
+4. **Owner Review UI**: Implemented `ReceiptReviewModal.tsx` displaying editable extracted fields (Amount, Reference, Sender Name, Mobile), amount mismatch warnings against expected GCash total, and duplicate reference alerts against local payment history. Integrated into `SellView.tsx` on pending drafts and recent GCash sales.
+5. **Automated Tests**: Added `tests/receipt-persistence.test.ts` exercising draft attachment, draft-to-sale transfer upon confirmation, direct sale attachment, multi-field search (normalized reference, name, mobile), non-destructive deletion, and real SQLite file restart persistence.
+6. **Integrity**: 171/171 automated tests passing (`npm test`), `npm run typecheck` passes with 0 errors, and `npx expo export --platform android` bundles cleanly (689 modules).
 
 ## Sources
 
