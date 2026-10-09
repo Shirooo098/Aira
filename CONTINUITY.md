@@ -1,5 +1,12 @@
 # Continuity
 
+## Ticket #14 — aged utang
+
+- 2026-10-10 [USER] Requested pull of current main and development of ticket #14.
+- 2026-10-10 [TOOL] Pulled main by fast-forward to 71e341c and based feat/#14-aged-utang on it; existing #12/#13 ledger contracts are merged. No commit or push performed.
+- 2026-10-10 [TOOL] Added a read-only customer aging query and Sell dashboard with oldest known debt/date/remaining amount, Philippine calendar-day priorities, visible unknown-date balances and existing reviewed repayment/history flow. Original sale-credit created_at and opening original_date remain authoritative; repayments never reset age. No schema or package changes.
+- 2026-10-10 [TOOL] Final tests: 162/162 pass, including 5 new aging suites covering real SQLite repayment/reversal/cancellation/restart and calendar boundaries. TypeScript passes. Android export passes; physical Oppo accessibility, foreground/midnight refresh and standalone offline acceptance remain pending. See docs/TICKET-14-AGING.md.
+
 ## Snapshot
 - 2026-10-10 [USER] Goal: implement D4 tickets using astra-orchestrator and implement skills.
 - 2026-10-10 [TOOL] Ticket #1 ("Create an offline catalog and typed price lookup") implementation and full verification complete.
