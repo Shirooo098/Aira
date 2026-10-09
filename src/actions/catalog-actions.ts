@@ -1,6 +1,7 @@
 import type { DatabaseSession } from '../db/database.ts';
 import type { Product, ProductDraft, LookupResult } from '../types.ts';
 import { validateProductDraft, generateProductId, normalizeText, CatalogValidationError } from '../domain/catalog.ts';
+import { normalizeAlias } from '../domain/aliases.ts';
 
 interface ProductRow {
   id: string;
@@ -105,39 +106,42 @@ export async function lookupProduct(
     return { kind: 'empty' };
   }
 
-  // 1. Check exact match on product name
-  const exactNameRows = await db.getAll<ProductRow>(
-    'SELECT * FROM products WHERE name_normalized = ?;',
-    [query]
-  );
+  // Preserve the catalog's existing normalized-text behavior while normalizing
+  // aliases independently so older product rows do not change semantics.
+  const aliasQuery = normalizeAlias(rawQuery);
+  const allRows = await db.getAll<ProductRow>('SELECT * FROM products;');
+  const exactCandidates = new Map<string, ProductRow>();
 
-  if (exactNameRows.length === 1) {
-    const row = exactNameRows[0];
-    if (row) return { kind: 'exact', product: mapRow(row) };
-  } else if (exactNameRows.length > 1) {
-    return {
-      kind: 'ambiguous',
-      query: rawQuery,
-      products: exactNameRows.map(mapRow),
-    };
+  // Exact product-name matches and exact name + variant matches are collected
+  // together with aliases so a collision can never return early as a single hit.
+  for (const row of allRows) {
+    if (row.name_normalized === query) exactCandidates.set(row.id, row);
   }
 
-  // 2. Check exact match on name + variant (e.g. "Coke 1.5L" or "Coke Maliit")
-  const allRows = await db.getAll<ProductRow>('SELECT * FROM products;');
   const exactComboMatches = allRows.filter((r) => {
     const combo1 = `${r.name_normalized} ${r.variant_normalized}`;
     const combo2 = `${r.name_normalized} - ${r.variant_normalized}`;
     return combo1 === query || combo2 === query;
   });
+  for (const row of exactComboMatches) exactCandidates.set(row.id, row);
 
-  if (exactComboMatches.length === 1) {
-    const row = exactComboMatches[0];
+  const aliasRows = await db.getAll<ProductRow>(
+    `SELECT p.*
+     FROM product_aliases a
+     JOIN products p ON p.id = a.product_id
+     WHERE a.alias_normalized = ?;`,
+    [aliasQuery]
+  );
+  for (const row of aliasRows) exactCandidates.set(row.id, row);
+
+  if (exactCandidates.size === 1) {
+    const row = exactCandidates.values().next().value;
     if (row) return { kind: 'exact', product: mapRow(row) };
-  } else if (exactComboMatches.length > 1) {
+  } else if (exactCandidates.size > 1) {
     return {
       kind: 'ambiguous',
       query: rawQuery,
-      products: exactComboMatches.map(mapRow),
+      products: [...exactCandidates.values()].map(mapRow),
     };
   }
 

@@ -173,6 +173,22 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 7,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS product_aliases (
+          alias_normalized TEXT NOT NULL CHECK (length(alias_normalized) BETWEEN 1 AND 120),
+          product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          alias_text TEXT NOT NULL CHECK (length(trim(alias_text)) BETWEEN 1 AND 120),
+          created_at TEXT NOT NULL CHECK (length(trim(created_at)) > 0),
+          PRIMARY KEY (alias_normalized, product_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_product_aliases_product_id ON product_aliases (product_id);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {
@@ -192,6 +208,20 @@ export async function runMigrations(db: DatabaseSession): Promise<void> {
       throw new Error('Database has a newer or unsupported schema version');
     }
     const appliedSet = new Set(appliedRows.map((r) => r.version));
+    // The pre-merge alias build used version 4 before main assigned it to GCash.
+    // Preserve those aliases/history and install the missing GCash schema in
+    // the same transaction before continuing with main's versions 5 and 6.
+    if (appliedSet.has(4)) {
+      const aliasTable = await db.getFirst<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'product_aliases';"
+      );
+      const salesColumns = await db.getAll<{ name: string }>('PRAGMA table_info(sales);');
+      if (aliasTable && !salesColumns.some((column) => column.name === 'reference_number')) {
+        const gcashMigration = MIGRATIONS.find((migration) => migration.version === 4);
+        if (!gcashMigration) throw new Error('Missing GCash migration');
+        await gcashMigration.up(db);
+      }
+    }
     for (const migration of MIGRATIONS) {
       if (!appliedSet.has(migration.version)) {
         await migration.up(db);
