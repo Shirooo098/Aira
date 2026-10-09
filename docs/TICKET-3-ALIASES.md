@@ -4,7 +4,9 @@ Aliases belong to the saved catalog. They do not require speech recognition or a
 
 ## Data contract
 
-Migration 4 appends `product_aliases` to the existing catalog, inventory, and sales schema. It preserves migrations 1–3 and existing records. The composite alias/product key prevents duplicate mappings while permitting the same nickname for different products. Such collisions require an explicit product choice during lookup. Coordinate this migration slot with D3 before merging if another schema migration is being developed.
+Migration 7 appends `product_aliases` to the existing catalog, inventory, and sales schema. It preserves main’s migrations 1–6 and existing records. The composite alias/product key prevents duplicate mappings while permitting the same nickname for different products. Such collisions require an explicit product choice during lookup. Coordinate this migration slot with D3 before merging if another schema migration is being developed.
+
+The pre-merge alias build used migration 4. Startup recognizes that legacy schema, installs the missing GCash migration within the upgrade transaction, and retains existing alias mappings without resetting app data.
 
 The prototype checkpoint in `prototypes/d2-language` remains a desktop experiment. Its JSON catalog, simplified product types, and terminal runners are not imported into the app. Production actions use the existing `DatabaseSession`, `Product`, and `LookupResult` contracts.
 
@@ -33,7 +35,7 @@ npx expo export --platform android
 
 The app tests use Node's runner and real SQLite, independently of the prototype's Vitest tests. Cover review without writes, invalid inputs, repeated confirmation, shared aliases, canonical-name collisions, current catalog prices, failure/retry, restart persistence, and upgrades preserving inventory and sales history.
 
-Verified on 2026-10-10: TypeScript check passed, all 45 app tests passed, and the Android Hermes bundle exported successfully. Independent code review found no material issues. These checks do not replace the phone acceptance below.
+Before the main merge, TypeScript, all 45 app tests, Android export, and independent code review passed. After combining main's speech, GCash, credit, and repayment features, TypeScript, all 92 app tests, and Android export passed, including migration 7 and legacy alias-v4 upgrade/rollback coverage. These checks do not replace the phone acceptance below.
 
 ## Phone acceptance — pending actual execution
 

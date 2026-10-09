@@ -4,11 +4,12 @@
 - 2026-10-10 [USER] Goal: implement D4 tickets using astra-orchestrator and implement skills.
 - 2026-10-10 [TOOL] Ticket #1 ("Create an offline catalog and typed price lookup") implementation and full verification complete.
 - 2026-10-10 [USER] User switched role to Developer 3 ("D3 — Transactions, Inventory & Utang Ledger / Data Coordinator") and requested ticket implementation.
-- 2026-10-10 [TOOL] Ticket #4 ("Set stock counts and record deliveries") merged via PR #22.
-- 2026-10-10 [TOOL] Created feature branch `feat/#7-cash-sale-inventory` on the unblocked frontier for Ticket #7 ("Complete a cash sale with consistent inventory").
-- 2026-10-10 [TOOL] Ticket #7 implementation complete: Migration v3 (`sales`, `sale_items`), domain validation & centavo arithmetic (`src/domain/sales.ts`), atomic transaction action layer with stock sufficiency and idempotency checks (`src/actions/sales-actions.ts`), and complete cash checkout UI slice in `SellView.tsx` with live price snapshot, tender/change preview, and confirmation.
-- 2026-10-10 [TOOL] Verification: 36/36 automated tests pass, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (652 modules).
-- 2026-10-10 [TOOL] Review: Independent reviewer subagent gave a clean PASS verdict verifying compliance with non-negotiable invariants (strict offline, integer centavos, atomic transactions, no silent negative inventory, historic snapshot price immutability).
+- 2026-10-10 [TOOL] Ticket #7 ("Complete a cash sale with consistent inventory") merged via PR #23.
+- 2026-10-10 [TOOL] Created feature branch `feat/#9-owner-confirmed-gcash` on the unblocked frontier for Ticket #9 ("Record owner-confirmed GCash purchases").
+- 2026-10-10 [TOOL] Ticket #9 implementation complete: Migration v4 (`pending_gcash_drafts` and `reference_number` column on `sales`), transactional drafting and confirmation action layer (`createPendingGcashDraft`, `confirmGcashSale`, `cancelPendingGcashDraft`), and complete UI slice in `SellView.tsx` with payment method toggle (Cash/GCash), owner confirmation banner (anti-screenshot-fraud warning), and pending draft queue.
+- 2026-10-10 [TOOL] Verification: 42/42 automated tests pass across all test suites, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (652 modules).
+- 2026-10-10 [TOOL] Review: Independent reviewer subagent gave a clean PASS verdict verifying compliance with non-negotiable invariants (strict offline, screenshots cannot confirm payment, drafts do not deduct stock or count as sales, atomic owner confirmation).
+
 
 
 
@@ -53,4 +54,16 @@
 - 2026-10-10 [USER] Aira means Artificial Intelligence for Retail Assistance; supersedes the earlier brand decision.
 - 2026-10-10 [TOOL] GitHub confirms canonical repository Shirooo098/Aira. Inspected all 20 issues; updated issue #1, the only issue with old brand text. Verified no old brand in live titles/bodies.
 - 2026-10-10 [TOOL] Updated local specification, developer guide, ticket plan and ticket URL references. Legacy local filenames retained for stable links. No commit or push.
+
+## Ticket #2 — D1 speech implementation
+
+- 2026-10-10 [USER] Requested astra-orchestrator to start building Ticket #2. Confirmed the Oppo is not available for testing now.
+- 2026-10-10 [TOOL] Verified #1 is merged into fetched origin/main at c2fad40. Created local branch feat/#2-offline-transcription from the current foundation/D4-document baseline, preserving existing D1 research/workflow files.
+- 2026-10-10 [TOOL] Implemented a reusable ephemeral speech-session controller, Expo PCM16 capture, bundled local Whisper adapter, push-to-talk/accessibility controls and editable/reviewable transcript in Ask price. No catalog, inventory or financial writes; no schema changes.
+- 2026-10-10 [TOOL] Pinned whisper.rn 0.7.4 plus buffer 6.0.3. Reused existing expo-audio; removed experimental extra recorder dependency. Model acquisition is build-time only, with pinned source revision and SHA-256. Multilingual tiny is provisional; base comparison remains outstanding.
+- 2026-10-10 [TOOL] Downloaded and verified tiny (77,691,713 bytes; SHA-256 be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21). Android prebuild passes and copies verified model/license/metadata to native APK assets with microphone permission enabled.
+- 2026-10-10 [TOOL] Verification: 36/36 tests and TypeScript pass; final Android JS export passes (659 modules). Windows sandbox export needed TEMP/TMP in workspace dist/export-temp. Independent Astra reviewer found no blockers after final lifecycle fixes.
+- 2026-10-10 [USER] Requested device-free tests and explicitly authorized committing/pushing Ticket #2 on feat/#2-whisper-speech.
+- 2026-10-10 [TOOL] Device-free verification rerun: 36/36 tests pass; prior final Android JS export and Android prebuild passed. Stopped the unfinished Gradle dependency-download attempt in response to the device-free testing request; no APK compilation success is claimed. Oppo accuracy/RAM/latency/offline acceptance remains pending. See docs/SPEECH-BENCHMARK.md and docs/SPEECH-INTEGRATION.md.
+- 2026-10-10 [TOOL] Prepared the Ticket #2 implementation for the requested branch. No PR publication or issue closure requested. #2 remains awaiting native/device acceptance; #5 retains the full three-second speech-to-price target.
 

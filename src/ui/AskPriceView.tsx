@@ -12,6 +12,7 @@ import type { Product } from '../types.ts';
 import { createLookupSession, type LookupState } from '../actions/lookup-session.ts';
 import { formatCentavos } from '../domain/money.ts';
 import { askPriceStyles as styles } from './ask-price-styles.ts';
+import { SpeechTranscriptInput } from './SpeechTranscriptInput.tsx';
 
 interface AskPriceViewProps {
   db: DatabaseSession;
@@ -45,6 +46,8 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
         <Text style={styles.title}>Alamin ang Presyo</Text>
         <Text style={styles.subtitle}>I-type ang pangalan o variant ng produkto</Text>
       </View>
+
+      <SpeechTranscriptInput />
 
       {error && (
         <View accessibilityRole="alert">

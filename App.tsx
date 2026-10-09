@@ -13,6 +13,7 @@ import type { DatabaseSession } from './src/db/database.ts';
 import { ExpoSqliteAdapter } from './src/db/expo-sqlite-adapter.ts';
 import { runMigrations } from './src/db/migrations.ts';
 import { playModeCue, disposeAudioPlayers } from './src/audio/cue-player.ts';
+import { isSpeechCaptureActive } from './src/speech/whisper-adapter.ts';
 import type { AppMode } from './src/types.ts';
 import { ModeSelector } from './src/ui/ModeSelector.tsx';
 import { AskPriceView } from './src/ui/AskPriceView.tsx';
@@ -58,6 +59,8 @@ export default function App(): React.JSX.Element {
 
   const handleSelectMode = async (mode: AppMode) => {
     setActiveMode(mode);
+    // The old view cancels its capture on unmount; avoid recording the next mode cue.
+    if (isSpeechCaptureActive()) return;
     const cueRes = await playModeCue(mode);
     if (!cueRes.ok && cueRes.error) {
       setAudioWarning(`Babala sa audio: ${cueRes.error}`);

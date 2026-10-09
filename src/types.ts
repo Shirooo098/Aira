@@ -85,12 +85,56 @@ export interface SaleItem {
   subtotalCentavos: number;
 }
 
+export interface PendingGcashDraft {
+  id: string;
+  totalCentavos: number;
+  referenceNumber: string | null;
+  customerNote: string | null;
+  items: Array<{ productId: string; quantity: number }>;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  nickname?: string | null;
+  note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreditEntryType = 'sale_credit' | 'opening_balance';
+
+export interface CreditEntry {
+  id: string;
+  customerId: string;
+  entryType: CreditEntryType;
+  saleId?: string | null;
+  originalAmountCentavos: number;
+  remainingAmountCentavos: number;
+  description?: string | null;
+  originalDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomerWithBalance = Customer & {
+  totalDebtCentavos: number;
+  activeCreditCount: number;
+};
+
 export interface Sale {
   id: string;
+  customerId?: string | null;
   totalCentavos: number;
   paymentMethod: PaymentMethod;
   tenderCentavos: number;
   changeCentavos: number;
+  paidCentavos: number;
+  creditCentavos: number;
+  referenceNumber?: string | null;
   createdAt: string;
   items: SaleItem[];
 }
@@ -114,5 +158,51 @@ export interface SalePreview {
   changeCentavos: number;
   canComplete: boolean;
   insufficientStockItems: string[];
+}
+
+export type RepaymentMethod = 'cash' | 'gcash';
+
+export interface RepaymentAllocation {
+  id: string;
+  repaymentId: string;
+  creditEntryId: string;
+  allocatedCentavos: number;
+  createdAt: string;
+}
+
+export interface CreditRepayment {
+  id: string;
+  customerId: string;
+  amountCentavos: number;
+  paymentMethod: PaymentMethod;
+  referenceNumber?: string | null;
+  note?: string | null;
+  idempotencyKey?: string | null;
+  createdAt: string;
+  allocations: RepaymentAllocation[];
+}
+
+export interface AllocationItemPreview {
+  creditEntryId: string;
+  entryType: CreditEntryType;
+  saleId?: string | null;
+  description?: string | null;
+  originalDate?: string | null;
+  createdAt: string;
+  currentRemainingCentavos: number;
+  allocatedCentavos: number;
+  newRemainingCentavos: number;
+  isFullySettled: boolean;
+}
+
+export interface RepaymentPreview {
+  customerId: string;
+  customerName: string;
+  currentTotalDebtCentavos: number;
+  repaymentAmountCentavos: number;
+  newTotalDebtCentavos: number;
+  allocations: AllocationItemPreview[];
+  canComplete: boolean;
+  error?: string | null;
 }
 
