@@ -33,10 +33,13 @@ interface StockRow {
 
 interface SaleRow {
   id: string;
+  customer_id?: string | null;
   payment_method: 'cash' | 'gcash';
   total_centavos: number;
   tender_centavos: number;
   change_centavos: number;
+  paid_centavos?: number | null;
+  credit_centavos?: number | null;
   reference_number: string | null;
   idempotency_key: string | null;
   created_at: string;
@@ -154,17 +157,20 @@ export async function completeCashSale(
   // Check idempotency first if key provided
   if (params.idempotencyKey) {
     const existingSale = await db.getFirst<SaleRow>(
-      'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
+      'SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
       [params.idempotencyKey]
     );
     if (existingSale) {
       const items = await getSaleItems(db, existingSale.id);
       return {
         id: existingSale.id,
+        customerId: existingSale.customer_id ?? null,
         paymentMethod: existingSale.payment_method,
         totalCentavos: existingSale.total_centavos,
         tenderCentavos: existingSale.tender_centavos,
         changeCentavos: existingSale.change_centavos,
+        paidCentavos: existingSale.paid_centavos ?? existingSale.total_centavos,
+        creditCentavos: existingSale.credit_centavos ?? 0,
         referenceNumber: existingSale.reference_number,
         createdAt: existingSale.created_at,
         items,
@@ -187,7 +193,7 @@ export async function completeCashSale(
     // Re-check idempotency key inside lock
     if (params.idempotencyKey) {
       const existingSale = await db.getFirst<SaleRow>(
-        'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
+        'SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
         [params.idempotencyKey]
       );
       if (existingSale) {
@@ -195,10 +201,13 @@ export async function completeCashSale(
         const items = await getSaleItems(db, existingSale.id);
         return {
           id: existingSale.id,
+          customerId: existingSale.customer_id ?? null,
           paymentMethod: existingSale.payment_method,
           totalCentavos: existingSale.total_centavos,
           tenderCentavos: existingSale.tender_centavos,
           changeCentavos: existingSale.change_centavos,
+          paidCentavos: existingSale.paid_centavos ?? existingSale.total_centavos,
+          creditCentavos: existingSale.credit_centavos ?? 0,
           referenceNumber: existingSale.reference_number,
           createdAt: existingSale.created_at,
           items,
@@ -354,10 +363,13 @@ export async function completeCashSale(
 
     return {
       id: saleId,
+      customerId: null,
       totalCentavos,
       paymentMethod: 'cash',
       tenderCentavos,
       changeCentavos,
+      paidCentavos: totalCentavos,
+      creditCentavos: 0,
       referenceNumber: null,
       createdAt: now,
       items: saleItemsToInsert,
@@ -532,17 +544,20 @@ export async function confirmGcashSale(
   // Check idempotency first before entering lock
   if (effectiveIdempotencyKey) {
     const existingSale = await db.getFirst<SaleRow>(
-      'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
+      'SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
       [effectiveIdempotencyKey]
     );
     if (existingSale) {
       const items = await getSaleItems(db, existingSale.id);
       return {
         id: existingSale.id,
+        customerId: existingSale.customer_id ?? null,
         paymentMethod: existingSale.payment_method,
         totalCentavos: existingSale.total_centavos,
         tenderCentavos: existingSale.tender_centavos,
         changeCentavos: existingSale.change_centavos,
+        paidCentavos: existingSale.paid_centavos ?? existingSale.total_centavos,
+        creditCentavos: existingSale.credit_centavos ?? 0,
         referenceNumber: existingSale.reference_number,
         createdAt: existingSale.created_at,
         items,
@@ -555,7 +570,7 @@ export async function confirmGcashSale(
     // Re-check idempotency key inside lock
     if (effectiveIdempotencyKey) {
       const existingSale = await db.getFirst<SaleRow>(
-        'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
+        'SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at FROM sales WHERE idempotency_key = ?;',
         [effectiveIdempotencyKey]
       );
       if (existingSale) {
@@ -563,10 +578,13 @@ export async function confirmGcashSale(
         const items = await getSaleItems(db, existingSale.id);
         return {
           id: existingSale.id,
+          customerId: existingSale.customer_id ?? null,
           paymentMethod: existingSale.payment_method,
           totalCentavos: existingSale.total_centavos,
           tenderCentavos: existingSale.tender_centavos,
           changeCentavos: existingSale.change_centavos,
+          paidCentavos: existingSale.paid_centavos ?? existingSale.total_centavos,
+          creditCentavos: existingSale.credit_centavos ?? 0,
           referenceNumber: existingSale.reference_number,
           createdAt: existingSale.created_at,
           items,
@@ -773,10 +791,13 @@ export async function confirmGcashSale(
 
     return {
       id: saleId,
+      customerId: null,
       totalCentavos,
       paymentMethod: 'gcash',
       tenderCentavos,
       changeCentavos,
+      paidCentavos: totalCentavos,
+      creditCentavos: 0,
       referenceNumber: refNum,
       createdAt: now,
       items: saleItemsToInsert,
@@ -819,7 +840,7 @@ export async function getSaleById(
   saleId: string
 ): Promise<Sale | null> {
   const row = await db.getFirst<SaleRow>(
-    'SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, reference_number, idempotency_key, created_at FROM sales WHERE id = ?;',
+    'SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at FROM sales WHERE id = ?;',
     [saleId]
   );
   if (!row) {
@@ -829,10 +850,13 @@ export async function getSaleById(
   const items = await getSaleItems(db, row.id);
   return {
     id: row.id,
+    customerId: row.customer_id ?? null,
     paymentMethod: row.payment_method,
     totalCentavos: row.total_centavos,
     tenderCentavos: row.tender_centavos,
     changeCentavos: row.change_centavos,
+    paidCentavos: row.paid_centavos ?? row.total_centavos,
+    creditCentavos: row.credit_centavos ?? 0,
     referenceNumber: row.reference_number,
     createdAt: row.created_at,
     items,
@@ -844,7 +868,7 @@ export async function getRecentSales(
   limit: number = 20
 ): Promise<Sale[]> {
   const rows = await db.getAll<SaleRow>(
-    `SELECT id, payment_method, total_centavos, tender_centavos, change_centavos, reference_number, idempotency_key, created_at
+    `SELECT id, customer_id, payment_method, total_centavos, tender_centavos, change_centavos, paid_centavos, credit_centavos, reference_number, idempotency_key, created_at
      FROM sales
      ORDER BY created_at DESC, rowid DESC
      LIMIT ?;`,
@@ -856,10 +880,13 @@ export async function getRecentSales(
     const items = await getSaleItems(db, row.id);
     sales.push({
       id: row.id,
+      customerId: row.customer_id ?? null,
       paymentMethod: row.payment_method,
       totalCentavos: row.total_centavos,
       tenderCentavos: row.tender_centavos,
       changeCentavos: row.change_centavos,
+      paidCentavos: row.paid_centavos ?? row.total_centavos,
+      creditCentavos: row.credit_centavos ?? 0,
       referenceNumber: row.reference_number,
       createdAt: row.created_at,
       items,
