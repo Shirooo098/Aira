@@ -85,12 +85,24 @@ export interface SaleItem {
   subtotalCentavos: number;
 }
 
+export interface PendingGcashDraft {
+  id: string;
+  totalCentavos: number;
+  referenceNumber: string | null;
+  customerNote: string | null;
+  items: Array<{ productId: string; quantity: number }>;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Sale {
   id: string;
   totalCentavos: number;
   paymentMethod: PaymentMethod;
   tenderCentavos: number;
   changeCentavos: number;
+  referenceNumber?: string | null;
   createdAt: string;
   items: SaleItem[];
 }

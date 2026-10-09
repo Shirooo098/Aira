@@ -11,14 +11,15 @@ test('runMigrations creates schema_migrations, products, stock_levels, and inven
 
   await runMigrations(db);
 
-  // Table schema_migrations exists and has versions 1, 2, and 3
+  // Table schema_migrations exists and has versions 1, 2, 3, and 4
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 3);
+  assert.equal(migrationRows.length, 4);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
   assert.equal(migrationRows[2]?.version, 3);
+  assert.equal(migrationRows[3]?.version, 4);
 
   // Tables exist and can be queried
   const productRows = await db.getAll('SELECT * FROM products;');
@@ -36,12 +37,15 @@ test('runMigrations creates schema_migrations, products, stock_levels, and inven
   const saleItemRows = await db.getAll('SELECT * FROM sale_items;');
   assert.equal(saleItemRows.length, 0);
 
+  const pendingGcashRows = await db.getAll('SELECT * FROM pending_gcash_drafts;');
+  assert.equal(pendingGcashRows.length, 0);
+
   // Re-running migrations is idempotent
   await runMigrations(db);
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 3);
+  assert.equal(secondRunRows.length, 4);
 });
 
 test('the schema rejects fractional and unsafe monetary values', async (t) => {
@@ -113,29 +117,30 @@ test('the schema rejects invalid sales and sale_items values', async (t) => {
   sqlite.exec(`INSERT INTO products VALUES
     ('p1', 'Coke', '250 ml', 'bote', 1500, 'coke', '250 ml', 'bote', 'now', 'now')`);
 
-  const insertSale = sqlite.prepare(`INSERT INTO sales VALUES
-    (?, ?, ?, ?, ?, ?, 'now')`);
+  const insertSale = sqlite.prepare(`INSERT INTO sales (
+    id, payment_method, total_centavos, tender_centavos, change_centavos, reference_number, idempotency_key, created_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, 'now')`);
 
   // Invalid payment_method
   assert.throws(
-    () => insertSale.run('s1', 'card', 1500, 2000, 500, null),
+    () => insertSale.run('s1', 'card', 1500, 2000, 500, null, null),
     /CHECK constraint/
   );
 
   // Negative or non-integer total_centavos
   for (const invalid of [-1, 15.5, 'abc']) {
     assert.throws(
-      () => insertSale.run('s2', 'cash', invalid, 2000, 500, null),
+      () => insertSale.run('s2', 'cash', invalid, 2000, 500, null, null),
       /CHECK constraint/
     );
   }
 
   // Insert valid sale for sale_items test
-  insertSale.run('s1', 'cash', 1500, 2000, 500, 'key-1');
+  insertSale.run('s1', 'cash', 1500, 2000, 500, 'REF-123', 'key-1');
 
   // Idempotency key duplicate
   assert.throws(
-    () => insertSale.run('s2', 'cash', 1500, 2000, 500, 'key-1'),
+    () => insertSale.run('s2', 'cash', 1500, 2000, 500, 'REF-456', 'key-1'),
     /UNIQUE constraint/
   );
 
@@ -165,6 +170,24 @@ test('the schema rejects invalid sales and sale_items values', async (t) => {
       /CHECK constraint/
     );
   }
+
+  // Test pending_gcash_drafts constraints
+  const insertDraft = sqlite.prepare(`INSERT INTO pending_gcash_drafts VALUES
+    (?, ?, ?, ?, ?, ?, 'now', 'now')`);
+
+  // Invalid status
+  assert.throws(
+    () => insertDraft.run('d1', 1500, 'REF1', 'note', '[]', 'invalid_status'),
+    /CHECK constraint/
+  );
+
+  // Invalid total_centavos (negative or non-integer)
+  for (const invalid of [-1, 15.5, 'abc']) {
+    assert.throws(
+      () => insertDraft.run('d2', invalid, 'REF1', 'note', '[]', 'pending'),
+      /CHECK constraint/
+    );
+  }
 });
 
 test('failed migration rolls back schema changes and remains retryable', async (t) => {
@@ -190,5 +213,5 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 4);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 5);
 });
