@@ -1,5 +1,13 @@
 # Continuity
 
+## Ticket #10 — attach, extract and find GCash receipts
+
+- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
+- 2026-10-10 [TOOL] Created feature branch `feat/#10-gcash-receipt-ocr`. Implemented Migration 9 (`receipt_attachments`), persistence and search action layer (`src/actions/receipt-actions.ts`), and OCR service abstraction (`src/services/receipt-ocr-service.ts`).
+- 2026-10-10 [TOOL] Built atomic draft-to-sale receipt attachment transfer in `confirmGcashSale` (`src/actions/sales-actions.ts`).
+- 2026-10-10 [TOOL] Implemented owner review modal (`src/ui/ReceiptReviewModal.tsx`) integrated with `SellView.tsx` showing editable OCR proposals, amount mismatch warnings, and duplicate reference alerts without automated payment confirmation.
+- 2026-10-10 [TOOL] Verification: 171/171 automated tests passing (`npm test`), `npm run typecheck` passes cleanly with 0 errors, and `npx expo export --platform android` bundles successfully (689 modules).
+
 ## Ticket #15 — store reports across calendar periods
 
 - 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.

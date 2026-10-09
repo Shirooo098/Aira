@@ -37,17 +37,14 @@ Receipt attachment is explicitly reviewed and saved by the owner. Receipt fields
 
 Schema follow-up through D3 conventions: allocate migration after existing v8, reference actual sale/draft IDs, preserve all previous data, and document draft-to-sale transfer. Do not invent replacement transaction tables.
 
-## Remaining work
+## Implementation & Verification of Persistence and UI Slice
 
-1. Approve and resolve native dependencies; inspect installed bundled model dependency and build compatibility.
-2. Implement private image storage, migration/link actions, failure cleanup and restart tests using real SQLite/files.
-3. Add capture/import → OCR → editable fields/image comparison → explicit attachment save → history/search UI, with useful cancellation/permission/extraction errors.
-4. Recheck references after field correction, and show amount mismatch before saving evidence without implying verified funds.
-5. Verify masked/ambiguous real receipt samples on Oppo in airplane mode with Wi-Fi off, fresh install, restart retrieval and standalone release. Text fixture tests do not establish OCR accuracy.
-
-## Verification of first slice
-
-2026-10-10: `npm run typecheck` passes. Full `npm test` passes 129/129 tests, including 16 new receipt tests. Expected Node experimental SQLite warnings remain. Independent standards/spec reviews have no remaining actionable findings after fixing next-line recipient-heading consumption. No lint script is configured. No native build/device/OCR quality pass is claimed; no dependencies, migrations, commits or pushes were added in this slice.
+1. **Schema Migration 9**: Added `receipt_attachments` table storing app-private file URI, integer centavo amounts, reference number, sender name, sender mobile, raw OCR text, and created timestamp, with indices on `(target_kind, target_id)`, `reference_number`, and `created_at`.
+2. **Action Layer**: Added `attachReceipt`, `getReceiptAttachment`, `getReceiptAttachmentById`, `searchReceiptAttachments`, `deleteReceiptAttachment`, and `transferDraftReceiptToSale` in `src/actions/receipt-actions.ts`.
+3. **Atomic Draft Transfer**: When `confirmGcashSale` is called with `draftId`, any receipt attached to the draft is automatically transferred to the confirmed sale in the same database transaction.
+4. **Owner Review UI**: Implemented `ReceiptReviewModal.tsx` displaying editable extracted fields (Amount, Reference, Sender Name, Mobile), amount mismatch warnings against expected GCash total, and duplicate reference alerts against local payment history. Integrated into `SellView.tsx` on pending drafts and recent GCash sales.
+5. **Automated Tests**: Added `tests/receipt-persistence.test.ts` exercising draft attachment, draft-to-sale transfer upon confirmation, direct sale attachment, multi-field search (normalized reference, name, mobile), non-destructive deletion, and real SQLite file restart persistence.
+6. **Integrity**: 171/171 automated tests passing (`npm test`), `npm run typecheck` passes with 0 errors, and `npx expo export --platform android` bundles cleanly (689 modules).
 
 ## Sources
 

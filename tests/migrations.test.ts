@@ -11,11 +11,11 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
 
   await runMigrations(db);
 
-  // Table schema_migrations exists and has versions 1 through 8
+  // Table schema_migrations exists and has versions 1 through 9
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 8);
+  assert.equal(migrationRows.length, 9);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
   assert.equal(migrationRows[2]?.version, 3);
@@ -24,6 +24,7 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   assert.equal(migrationRows[5]?.version, 6);
   assert.equal(migrationRows[6]?.version, 7);
   assert.equal(migrationRows[7]?.version, 8);
+  assert.equal(migrationRows[8]?.version, 9);
   assert.deepEqual(await db.getAll('SELECT * FROM product_aliases;'), []);
 
   // Tables exist and can be queried
@@ -62,7 +63,7 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 8);
+  assert.equal(secondRunRows.length, 9);
 });
 
 test('the aliases table rejects blank or oversized aliases and duplicate product mappings', async (t) => {
@@ -252,7 +253,7 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 9);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 10);
 });
 
 test('Migration 5 constraints validate customers, credit_entries, and sales columns', async (t) => {

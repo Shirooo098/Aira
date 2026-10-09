@@ -230,6 +230,29 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 9,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS receipt_attachments (
+          id TEXT PRIMARY KEY NOT NULL,
+          target_kind TEXT NOT NULL CHECK (target_kind IN ('sale', 'pending_draft')),
+          target_id TEXT NOT NULL,
+          image_path TEXT NOT NULL,
+          amount_centavos INTEGER CHECK (amount_centavos IS NULL OR (typeof(amount_centavos) = 'integer' AND amount_centavos >= 0)),
+          reference_number TEXT,
+          sender_name TEXT,
+          sender_mobile TEXT,
+          raw_text TEXT,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_receipt_attachments_target ON receipt_attachments (target_kind, target_id);
+        CREATE INDEX IF NOT EXISTS idx_receipt_attachments_reference ON receipt_attachments (reference_number);
+        CREATE INDEX IF NOT EXISTS idx_receipt_attachments_created ON receipt_attachments (created_at DESC);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {
