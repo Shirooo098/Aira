@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import type { DatabaseSession } from '../db/database.ts';
 import type { Product } from '../types.ts';
 import { createLookupSession, type LookupState } from '../actions/lookup-session.ts';
 import { formatCentavos } from '../domain/money.ts';
+import { parsePriceCommand } from '../domain/price-command.ts';
 import { askPriceStyles as styles } from './ask-price-styles.ts';
 import { SpeechTranscriptInput } from './SpeechTranscriptInput.tsx';
 
@@ -18,22 +19,68 @@ interface AskPriceViewProps {
   db: DatabaseSession;
 }
 
+type QuerySource = 'typed' | 'voice' | null;
+
 export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
   const [query, setQuery] = useState('');
+  const [reviewedQuestion, setReviewedQuestion] = useState<string | null>(null);
+  const [extractedPhrase, setExtractedPhrase] = useState<string | null>(null);
+  const [voiceCommandError, setVoiceCommandError] = useState<string | null>(null);
   const [{ loading, result, error }, setLookup] = useState<LookupState>({
     result: { kind: 'empty' }, loading: false, error: null,
   });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const querySource = useRef<QuerySource>(null);
 
   const lookup = useMemo(() => createLookupSession(db, setLookup), [db]);
   useEffect(() => () => lookup.cancel(), [lookup]);
+
   const handleSearch = (text: string) => {
     setQuery(text);
+    querySource.current = text.trim() ? 'typed' : null;
     setSelectedProduct(null);
+    setReviewedQuestion(null);
+    setExtractedPhrase(null);
+    setVoiceCommandError(null);
     void lookup.search(text);
   };
 
+  const handleVoiceInvalidated = () => {
+    // Editing or discarding speech should not erase a separate query the owner typed.
+    if (querySource.current !== 'voice') return;
+    querySource.current = null;
+    setQuery('');
+    setSelectedProduct(null);
+    setReviewedQuestion(null);
+    setExtractedPhrase(null);
+    setVoiceCommandError(null);
+    void lookup.search('');
+  };
+
+  const handleReviewedTranscript = (text: string) => {
+    const phrase = parsePriceCommand(text);
+    querySource.current = 'voice';
+    setReviewedQuestion(text);
+    setExtractedPhrase(phrase);
+    setSelectedProduct(null);
+    setVoiceCommandError(null);
+
+    if (!phrase) {
+      setQuery('');
+      setVoiceCommandError('Hindi matukoy ang pangalan ng produkto sa tanong. I-edit ang transcript o mag-type ng pangalan sa ibaba.');
+      void lookup.search('');
+      return;
+    }
+
+    setQuery(phrase);
+    void lookup.search(phrase);
+  };
+
   const handleClear = () => handleSearch('');
+  const handleRetrySearch = () => {
+    setSelectedProduct(null);
+    void lookup.search(query);
+  };
 
   const displayProduct = selectedProduct ?? (result.kind === 'exact' ? result.product : null);
 
@@ -44,15 +91,36 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Alamin ang Presyo</Text>
-        <Text style={styles.subtitle}>I-type ang pangalan o variant ng produkto</Text>
+        <Text style={styles.subtitle}>I-type ang pangalan o suriin muna ang tanong sa boses</Text>
       </View>
 
-      <SpeechTranscriptInput />
+      <SpeechTranscriptInput
+        onReviewedTranscript={handleReviewedTranscript}
+        onTranscriptInvalidated={handleVoiceInvalidated}
+      />
+
+      {reviewedQuestion !== null && (
+        <View style={styles.voiceReviewContainer}>
+          <Text style={styles.voiceReviewLabel}>Nasuring tanong</Text>
+          <Text style={styles.voiceReviewText}>{reviewedQuestion}</Text>
+          {extractedPhrase !== null && (
+            <>
+              <Text style={styles.voiceReviewLabel}>Produktong hahanapin</Text>
+              <Text style={styles.voiceReviewText}>{extractedPhrase}</Text>
+            </>
+          )}
+          {voiceCommandError !== null && (
+            <Text style={styles.voiceCommandError} accessibilityRole="alert">
+              {voiceCommandError}
+            </Text>
+          )}
+        </View>
+      )}
 
       {error && (
         <View accessibilityRole="alert">
           <Text>{error}</Text>
-          <TouchableOpacity style={styles.clearButton} accessibilityRole="button" onPress={() => handleSearch(query)}>
+          <TouchableOpacity style={styles.clearButton} accessibilityRole="button" onPress={handleRetrySearch}>
             <Text>Subukan muli</Text>
           </TouchableOpacity>
         </View>
@@ -116,7 +184,7 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
               style={styles.choiceCard}
               onPress={() => setSelectedProduct(item)}
               accessibilityRole="button"
-              accessibilityLabel={`${item.name}, ${item.variant}, bawat ${item.unit}, presyo ${formatCentavos(item.priceCentavos)}`}
+              accessibilityLabel={`${item.name}, ${item.variant}, bawat ${item.unit}`}
             >
               <View style={styles.choiceInfo}>
                 <Text style={styles.choiceName}>{item.name}</Text>
@@ -124,9 +192,6 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
                   {item.variant} • bawat {item.unit}
                 </Text>
               </View>
-              <Text style={styles.choicePrice}>
-                {formatCentavos(item.priceCentavos)}
-              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -144,7 +209,7 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
         </View>
       )}
 
-      {!loading && !error && result.kind === 'empty' && (
+      {!loading && !error && voiceCommandError === null && result.kind === 'empty' && (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
             I-type ang pangalan ng paninda sa itaas upang masilip ang opisyal na presyo.

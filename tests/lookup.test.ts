@@ -82,3 +82,24 @@ test('an unknown variant never inherits the price of a known product name', asyn
     kind: 'unknown', query: 'Coke 999 ml',
   });
 });
+
+test('a singleton partial match remains a choice and never returns a price', async (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  const db = new NodeSqliteAdapter(sqlite);
+  await runMigrations(db);
+  const product = await saveProduct(db, {
+    name: 'Safeguard White',
+    variant: '60g',
+    unit: 'bar',
+    priceCentavos: 2800,
+  });
+
+  const result = await lookupProduct(db, 'Safegu');
+  assert.equal(result.kind, 'ambiguous');
+  if (result.kind === 'ambiguous') {
+    assert.equal(result.products.length, 1);
+    assert.equal(result.products[0]?.id, product.id);
+    assert.equal('priceCentavos' in result, false);
+  }
+});

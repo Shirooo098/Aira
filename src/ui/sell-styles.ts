@@ -514,6 +514,122 @@ export const sellStyles = StyleSheet.create({
     fontWeight: '700',
     color: '#b91c1c',
   },
+  // Recent Sales styles
+  recentSaleItem: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  recentSaleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  recentSaleTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  recentSaleAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0284c7',
+  },
+  recentSaleMeta: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  cancelledBadge: {
+    backgroundColor: '#fee2e2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  cancelledBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#b91c1c',
+  },
+  cancelledReasonText: {
+    fontSize: 11,
+    color: '#b91c1c',
+    fontStyle: 'italic',
+    marginTop: 3,
+  },
+  cancelSaleBtn: {
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  cancelSaleBtnText: {
+    color: '#b91c1c',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cancelConfirmBox: {
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 8,
+  },
+  cancelConfirmPrompt: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9f1239',
+    marginBottom: 4,
+  },
+  cancelConfirmWarning: {
+    fontSize: 11,
+    color: '#b91c1c',
+    marginBottom: 6,
+  },
+  cancelInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 12,
+    color: '#1e293b',
+    marginBottom: 6,
+  },
+  cancelActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  cancelCancelBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  cancelCancelBtnText: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  cancelConfirmBtn: {
+    backgroundColor: '#b91c1c',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  cancelConfirmBtnText: {
+    fontSize: 11,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
 });
 
 

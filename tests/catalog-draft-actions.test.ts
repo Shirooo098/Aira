@@ -341,4 +341,3 @@ test('existing stock and price writes roll back when a confirmation write fails'
   assert.equal((await getAllProducts(db))[0]?.priceCentavos, 500);
   assert.equal((await getStockLevel(db, product.id))?.quantity, 20);
 });
-

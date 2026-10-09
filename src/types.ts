@@ -116,6 +116,7 @@ export interface CreditEntry {
   remainingAmountCentavos: number;
   description?: string | null;
   originalDate?: string | null;
+  status?: 'active' | 'cancelled';
   createdAt: string;
   updatedAt: string;
 }
@@ -124,6 +125,8 @@ export type CustomerWithBalance = Customer & {
   totalDebtCentavos: number;
   activeCreditCount: number;
 };
+
+export type SaleStatus = 'completed' | 'cancelled';
 
 export interface Sale {
   id: string;
@@ -135,6 +138,9 @@ export interface Sale {
   paidCentavos: number;
   creditCentavos: number;
   referenceNumber?: string | null;
+  status?: SaleStatus;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
   createdAt: string;
   items: SaleItem[];
 }
@@ -162,11 +168,14 @@ export interface SalePreview {
 
 export type RepaymentMethod = 'cash' | 'gcash';
 
+export type RepaymentStatus = 'active' | 'reversed';
+
 export interface RepaymentAllocation {
   id: string;
   repaymentId: string;
   creditEntryId: string;
   allocatedCentavos: number;
+  status?: 'active' | 'reversed';
   createdAt: string;
 }
 
@@ -178,6 +187,9 @@ export interface CreditRepayment {
   referenceNumber?: string | null;
   note?: string | null;
   idempotencyKey?: string | null;
+  status?: RepaymentStatus;
+  reversedAt?: string | null;
+  reversalReason?: string | null;
   createdAt: string;
   allocations: RepaymentAllocation[];
 }

@@ -154,10 +154,7 @@ export async function lookupProduct(
     );
   });
 
-  if (partialMatches.length === 1) {
-    const row = partialMatches[0];
-    if (row) return { kind: 'exact', product: mapRow(row) };
-  } else if (partialMatches.length > 1) {
+  if (partialMatches.length > 0) {
     return {
       kind: 'ambiguous',
       query: rawQuery,

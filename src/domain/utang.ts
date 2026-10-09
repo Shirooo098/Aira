@@ -19,6 +19,13 @@ export class OverpaymentError extends CreditValidationError {
   }
 }
 
+export class RepaymentAlreadyReversedError extends CreditValidationError {
+  constructor(message: string = 'Na-reverse na ang bayad na ito') {
+    super(message);
+    this.name = 'RepaymentAlreadyReversedError';
+  }
+}
+
 export function validateCustomerName(name: string): string {
   if (typeof name !== 'string') {
     throw new CustomerValidationError('Kailangang maglagay ng pangalan ng suki');

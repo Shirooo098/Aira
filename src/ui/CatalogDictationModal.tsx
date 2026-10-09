@@ -247,8 +247,8 @@ export function CatalogDictationModal({
                 title="Magsalita ng detalye"
                 description="Magsalita sa Filipino o Taglish. Lalabas muna ang transcript para masuri mo bago kunin ang mga field."
                 reviewLabel="Gamitin ang transcript"
-                onDraftChanged={invalidateDraft}
-                onReviewed={applyTranscript}
+                onTranscriptInvalidated={invalidateDraft}
+                onReviewedTranscript={applyTranscript}
               />
             )}
 
@@ -542,7 +542,7 @@ export function CatalogDictationModal({
                   title="Kumpirmahin ang nasuring pagbabago"
                   description="Ang eksaktong kumpirmasyon lamang ang tatanggapin. Ang ibang sinabi ay hindi magse-save."
                   reviewLabel="Ipadala ang kumpirmasyon"
-                  onReviewed={(text) => { void finishSave('spoken', text); }}
+                  onReviewedTranscript={(text) => { void finishSave('spoken', text); }}
                 />
               </View>
             )}

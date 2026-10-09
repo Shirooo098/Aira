@@ -189,6 +189,47 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 8,
+    async up(db: DatabaseSession): Promise<void> {
+      const salesColumns = await db.getAll<{ name: string }>('PRAGMA table_info(sales);');
+      const salesColNames = new Set(salesColumns.map((c) => c.name));
+
+      if (!salesColNames.has('status')) {
+        await db.exec("ALTER TABLE sales ADD COLUMN status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('completed', 'cancelled'));");
+      }
+      if (!salesColNames.has('cancelled_at')) {
+        await db.exec("ALTER TABLE sales ADD COLUMN cancelled_at TEXT;");
+      }
+      if (!salesColNames.has('cancellation_reason')) {
+        await db.exec("ALTER TABLE sales ADD COLUMN cancellation_reason TEXT;");
+      }
+
+      const creditColumns = await db.getAll<{ name: string }>('PRAGMA table_info(credit_entries);');
+      const creditColNames = new Set(creditColumns.map((c) => c.name));
+      if (!creditColNames.has('status')) {
+        await db.exec("ALTER TABLE credit_entries ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled'));");
+      }
+
+      const repayColumns = await db.getAll<{ name: string }>('PRAGMA table_info(credit_repayments);');
+      const repayColNames = new Set(repayColumns.map((c) => c.name));
+      if (!repayColNames.has('status')) {
+        await db.exec("ALTER TABLE credit_repayments ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'reversed'));");
+      }
+      if (!repayColNames.has('reversed_at')) {
+        await db.exec("ALTER TABLE credit_repayments ADD COLUMN reversed_at TEXT;");
+      }
+      if (!repayColNames.has('reversal_reason')) {
+        await db.exec("ALTER TABLE credit_repayments ADD COLUMN reversal_reason TEXT;");
+      }
+
+      const allocColumns = await db.getAll<{ name: string }>('PRAGMA table_info(repayment_allocations);');
+      const allocColNames = new Set(allocColumns.map((c) => c.name));
+      if (!allocColNames.has('status')) {
+        await db.exec("ALTER TABLE repayment_allocations ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'reversed'));");
+      }
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {

@@ -48,6 +48,8 @@ The automated tests use real SQLite for read-only preparation, duplicate/invalid
 
 Verified on 2026-10-10: TypeScript passed, all 120 app tests passed, Android Hermes export passed, and independent review found no remaining material issues. No rendered phone UI, native APK build, speech accuracy, or airplane-mode result is claimed by these desktop checks.
 
+Integration with main's tickets #5 and #13 was subsequently verified: TypeScript, all 141 tests, and Android export passed. The shared speech input uses the reviewed-transcript and invalidation callbacks for both price lookup and catalog dictation. Native speech and offline phone acceptance remain pending.
+
 ## Physical-phone acceptance — pending
 
 Use [speech build instructions](SPEECH-INTEGRATION.md) for a development build with the packaged model. Expo Go supports the typed flow but cannot run Whisper. Android export verifies the JavaScript bundle; it does not build an APK or prove native recognition.

@@ -12,6 +12,14 @@ import { createSpeechSessionController, type SpeechSessionState } from '../speec
 import { createWhisperAdapter } from '../speech/whisper-adapter.ts';
 import { speechTranscriptStyles as styles } from './speech-transcript-styles.ts';
 
+interface SpeechTranscriptInputProps {
+  onReviewedTranscript?: (text: string) => void;
+  onTranscriptInvalidated?: () => void;
+  reviewLabel?: string;
+  title?: string;
+  description?: string;
+}
+
 function errorMessage(state: SpeechSessionState): string | null {
   const error = state.error;
   if (!error) return null;
@@ -33,23 +41,28 @@ function errorMessage(state: SpeechSessionState): string | null {
   return error.message;
 }
 
-interface SpeechTranscriptInputProps {
-  onReviewed?: (text: string) => void;
-  onDraftChanged?: () => void;
-  reviewLabel?: string;
-  title?: string;
-  description?: string;
-}
-
 export function SpeechTranscriptInput({
-  onReviewed,
-  onDraftChanged,
+  onReviewedTranscript,
+  onTranscriptInvalidated,
   reviewLabel,
   title,
   description,
 }: SpeechTranscriptInputProps = {}): React.JSX.Element {
   const adapter = useMemo(() => createWhisperAdapter(), []);
-  const session = useMemo(() => createSpeechSessionController(adapter), [adapter]);
+  const onReviewedTranscriptRef = useRef(onReviewedTranscript);
+  const onTranscriptInvalidatedRef = useRef(onTranscriptInvalidated);
+  onReviewedTranscriptRef.current = onReviewedTranscript;
+  onTranscriptInvalidatedRef.current = onTranscriptInvalidated;
+  const invalidateTranscript = () => {
+    try {
+      onTranscriptInvalidatedRef.current?.();
+    } catch {
+      // A consumer callback must not interrupt capture cleanup or startup.
+    }
+  };
+  const session = useMemo(() => createSpeechSessionController(adapter, {
+    onReviewedTranscript: (text) => onReviewedTranscriptRef.current?.(text),
+  }), [adapter]);
   const [state, setState] = useState<SpeechSessionState>(() => session.getState());
   const [reviewedDraft, setReviewedDraft] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState(false);
@@ -72,12 +85,12 @@ export function SpeechTranscriptInput({
         startPending.current = false;
         holdAttempt.current++;
         setReviewedDraft(null);
-        onDraftChanged?.();
+        invalidateTranscript();
         void session.cancelForBackground();
       }
     });
     return () => subscription.remove();
-  }, [session, onDraftChanged]);
+  }, [session]);
 
   const prepareSpeech = () => {
     setSettingsError(false);
@@ -87,7 +100,8 @@ export function SpeechTranscriptInput({
   const handleHoldStart = () => {
     if (!session.getState().prepared || session.getState().status !== 'ready') return;
 
-    onDraftChanged?.();
+    setReviewedDraft(null);
+    invalidateTranscript();
     holdActive.current = true;
     startPending.current = true;
     const attempt = ++holdAttempt.current;
@@ -131,7 +145,7 @@ export function SpeechTranscriptInput({
       void session.cancel();
     } else if (current.status === 'ready' && current.prepared) {
       setReviewedDraft(null);
-      onDraftChanged?.();
+      invalidateTranscript();
       void session.start();
     }
   };
@@ -141,7 +155,7 @@ export function SpeechTranscriptInput({
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
-    onDraftChanged?.();
+    invalidateTranscript();
     void session.cancel();
   };
 
@@ -150,7 +164,7 @@ export function SpeechTranscriptInput({
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
-    onDraftChanged?.();
+    invalidateTranscript();
     void session.retry();
   };
 
@@ -159,14 +173,13 @@ export function SpeechTranscriptInput({
     startPending.current = false;
     holdAttempt.current++;
     setReviewedDraft(null);
-    onDraftChanged?.();
+    invalidateTranscript();
     void session.cancel();
   };
 
   const handleReview = () => {
     const draft = session.review();
     setReviewedDraft(draft);
-    if (draft !== null) onReviewed?.(draft);
   };
 
   const handleOpenSettings = () => {
@@ -201,7 +214,7 @@ export function SpeechTranscriptInput({
     <View style={styles.container}>
       <Text style={styles.title}>{title ?? 'Gamitin ang boses'}</Text>
       <Text style={styles.description}>
-        {description ?? 'Magsalita sa Filipino o Taglish. Mananatiling draft ang transcript at hindi ito awtomatikong maghahanap o magsa-save.'}
+        {description ?? 'Magsalita sa Filipino o Taglish, hal. “Magkano ang Coke?” Suriin muna ang transcript bago hanapin sa catalog; walang awtomatikong sine-save.'}
       </Text>
 
       <View style={styles.statusRow}>
@@ -319,7 +332,7 @@ export function SpeechTranscriptInput({
             value={state.draft}
             onChangeText={(text) => {
               setReviewedDraft(null);
-              onDraftChanged?.();
+              invalidateTranscript();
               session.edit(text);
             }}
             placeholder="Dito lalabas ang transcript"
@@ -332,7 +345,7 @@ export function SpeechTranscriptInput({
 
           {reviewedDraft !== null && reviewedDraft === state.draft ? (
             <Text style={styles.reviewedNotice} accessibilityLiveRegion="polite">
-              {onReviewed ? 'Nasuri ang transcript.' : 'Nasuri ang draft. Walang nahanap o na-save.'}
+              Nasuri ang transcript. Maaari mo pa itong itama o itapon.
             </Text>
           ) : (
             <Pressable

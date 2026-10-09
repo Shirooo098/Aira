@@ -75,6 +75,50 @@ test('prepares once, keeps recognition separate from edits, and returns only exp
   await controller.dispose();
 });
 
+test('review callback receives only the exact current nonblank draft after explicit review', async () => {
+  const reviewed: string[] = [];
+  const partials: Array<((transcript: string) => void) | undefined> = [];
+  let starts = 0;
+  const controller = createSpeechSessionController({
+    async prepare() {},
+    async start(onPartial) {
+      starts++;
+      partials.push(onPartial);
+      return captureWith(starts === 1 ? 'recognized draft' : 'retry draft');
+    },
+    async dispose() {},
+  }, { onReviewedTranscript: (text) => reviewed.push(text) });
+
+  assert.equal(controller.review(), null);
+  await controller.start();
+  partials[0]?.('partial recognition');
+  assert.deepEqual(reviewed, []);
+  await controller.stop();
+  assert.deepEqual(reviewed, []);
+
+  assert.equal(controller.review(), 'recognized draft');
+  assert.deepEqual(reviewed, ['recognized draft']);
+  controller.edit('   ');
+  assert.equal(controller.review(), null);
+  assert.deepEqual(reviewed, ['recognized draft']);
+  controller.edit('  corrected draft  ');
+  assert.deepEqual(reviewed, ['recognized draft'], 'editing alone cannot dispatch a reviewed transcript');
+  assert.equal(controller.review(), '  corrected draft  ');
+  assert.deepEqual(reviewed, ['recognized draft', '  corrected draft  ']);
+
+  await controller.retry();
+  partials[1]?.('retry partial');
+  assert.deepEqual(reviewed, ['recognized draft', '  corrected draft  ']);
+  await controller.cancel();
+  assert.deepEqual(reviewed, ['recognized draft', '  corrected draft  ']);
+
+  await controller.start();
+  partials[2]?.('background partial');
+  await controller.cancelForBackground();
+  assert.deepEqual(reviewed, ['recognized draft', '  corrected draft  ']);
+  await controller.dispose();
+});
+
 test('surfaces coded microphone denial and recovers through retry; empty final text remains recoverable', async () => {
   let starts = 0;
   const controller = createSpeechSessionController(adapterWith(async () => {
