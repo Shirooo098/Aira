@@ -4,6 +4,9 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
+    "postinstall": "node scripts/prepare-receipt-ocr.cjs",
+    "receipt:prebuild": "node scripts/prepare-receipt-ocr.cjs && expo prebuild --platform android",
+    "receipt:start": "expo start --dev-client --lan",
     "start": "expo start --go --lan",
     "start:tunnel": "expo start --go --tunnel",
     "android": "expo run:android",
@@ -14,11 +17,14 @@
     "speech:start": "expo start --dev-client --lan"
   },
   "dependencies": {
+    "@react-native-ml-kit/text-recognition": "2.0.0",
     "buffer": "6.0.3",
     "expo": "57.0.27",
     "expo-asset": "~57.0.19",
     "expo-audio": "~57.0.5",
     "expo-dev-client": "~57.0.19",
+    "expo-file-system": "~57.0.7",
+    "expo-image-picker": "~57.0.20",
     "expo-sqlite": "~57.0.4",
     "react": "19.2.3",
     "react-native": "0.86.3",
