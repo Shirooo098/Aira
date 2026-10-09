@@ -41,6 +41,7 @@ import {
 } from '../domain/sales.ts';
 import { CustomerValidationError, CreditValidationError } from '../domain/utang.ts';
 import { RepaymentModal } from './RepaymentModal.tsx';
+import { AgedUtangView } from './AgedUtangView.tsx';
 import { sellStyles as styles } from './sell-styles.ts';
 
 interface SellViewProps {
@@ -53,6 +54,7 @@ interface CartItem {
 }
 
 export function SellView({ db }: SellViewProps): React.JSX.Element {
+  const [agingVisible, setAgingVisible] = useState(false);
   const [products, setProducts] = useState<ProductWithStock[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -539,6 +541,9 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <Text style={styles.title}>Pagbebenta & Checkout</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={() => setAgingVisible(true)} style={{ minHeight: 48, padding: 12 }}>
+          <Text>Utang — mga dapat unahin</Text>
+        </TouchableOpacity>
         <Text style={styles.subtitle}>Pumili ng produkto, suriin ang presyo at stock, at kumpletuhin ang benta</Text>
       </View>
 
@@ -1186,6 +1191,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
           setErrorMessage(null);
         }}
       />
+      {agingVisible && <AgedUtangView db={db} onClose={() => { setAgingVisible(false); void loadCustomers(); }} />}
     </ScrollView>
   );
 }
