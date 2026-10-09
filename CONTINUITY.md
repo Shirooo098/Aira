@@ -4,11 +4,12 @@
 - 2026-10-10 [USER] Goal: implement D4 tickets using astra-orchestrator and implement skills.
 - 2026-10-10 [TOOL] Ticket #1 ("Create an offline catalog and typed price lookup") implementation and full verification complete.
 - 2026-10-10 [USER] User switched role to Developer 3 ("D3 — Transactions, Inventory & Utang Ledger / Data Coordinator") and requested ticket implementation.
-- 2026-10-10 [TOOL] Ticket #4 ("Set stock counts and record deliveries") merged via PR #22.
-- 2026-10-10 [TOOL] Created feature branch `feat/#7-cash-sale-inventory` on the unblocked frontier for Ticket #7 ("Complete a cash sale with consistent inventory").
-- 2026-10-10 [TOOL] Ticket #7 implementation complete: Migration v3 (`sales`, `sale_items`), domain validation & centavo arithmetic (`src/domain/sales.ts`), atomic transaction action layer with stock sufficiency and idempotency checks (`src/actions/sales-actions.ts`), and complete cash checkout UI slice in `SellView.tsx` with live price snapshot, tender/change preview, and confirmation.
-- 2026-10-10 [TOOL] Verification: 36/36 automated tests pass, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (652 modules).
-- 2026-10-10 [TOOL] Review: Independent reviewer subagent gave a clean PASS verdict verifying compliance with non-negotiable invariants (strict offline, integer centavos, atomic transactions, no silent negative inventory, historic snapshot price immutability).
+- 2026-10-10 [TOOL] Ticket #7 ("Complete a cash sale with consistent inventory") merged via PR #23.
+- 2026-10-10 [TOOL] Created feature branch `feat/#9-owner-confirmed-gcash` on the unblocked frontier for Ticket #9 ("Record owner-confirmed GCash purchases").
+- 2026-10-10 [TOOL] Ticket #9 implementation complete: Migration v4 (`pending_gcash_drafts` and `reference_number` column on `sales`), transactional drafting and confirmation action layer (`createPendingGcashDraft`, `confirmGcashSale`, `cancelPendingGcashDraft`), and complete UI slice in `SellView.tsx` with payment method toggle (Cash/GCash), owner confirmation banner (anti-screenshot-fraud warning), and pending draft queue.
+- 2026-10-10 [TOOL] Verification: 42/42 automated tests pass across all test suites, `npm run typecheck` passes with zero errors, and `npx expo export --platform android` bundles successfully (652 modules).
+- 2026-10-10 [TOOL] Review: Independent reviewer subagent gave a clean PASS verdict verifying compliance with non-negotiable invariants (strict offline, screenshots cannot confirm payment, drafts do not deduct stock or count as sales, atomic owner confirmation).
+
 
 
 

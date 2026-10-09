@@ -86,6 +86,27 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 4,
+    async up(db: DatabaseSession): Promise<void> {
+      await db.exec(`
+        ALTER TABLE sales ADD COLUMN reference_number TEXT;
+
+        CREATE TABLE pending_gcash_drafts (
+          id TEXT PRIMARY KEY NOT NULL,
+          total_centavos INTEGER NOT NULL CHECK (typeof(total_centavos) = 'integer' AND total_centavos >= 0),
+          reference_number TEXT,
+          customer_note TEXT,
+          items_json TEXT NOT NULL,
+          status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled')),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_pending_gcash_status ON pending_gcash_drafts (status, created_at DESC);
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: DatabaseSession): Promise<void> {
