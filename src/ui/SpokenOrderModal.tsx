@@ -1,3 +1,4 @@
+import { colors } from './theme.ts';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -319,7 +320,7 @@ export function SpokenOrderModal({
                   session.invalidate();
                 }}
                 placeholder="Hal. dalawang Coke at isang Lucky Me; isa lang pala ang Coke"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.muted}
                 multiline
                 textAlignVertical="top"
                 editable={!closingRef.current && state.status !== 'applied'}
@@ -333,7 +334,7 @@ export function SpokenOrderModal({
                 accessibilityLabel="Suriin ang utos sa cart"
               >
                 {isPreparing ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text style={styles.primaryButtonText}>Suriin ang utos</Text>
                 )}
@@ -387,7 +388,7 @@ export function SpokenOrderModal({
                               : 'Hindi ito natagpuan. Piliin ang paninda mula sa buong catalog:'}
                           </Text>
                           {choices.length === 0 ? (
-                            <Text style={styles.message}>Walang produktong nasa catalog. Idagdag muna ito sa Pamahalaan.</Text>
+                            <Text style={styles.message}>Walang produktong nasa catalog. Idagdag muna ito sa Tindahan.</Text>
                           ) : choices.map((product) => renderProductChoice(
                             product,
                             edit.productId === product.id,
@@ -408,7 +409,7 @@ export function SpokenOrderModal({
                         onChangeText={(quantityText) => updateAddItem(index, { quantityText })}
                         keyboardType="number-pad"
                         placeholder="Ilagay ang dami"
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.muted}
                         accessibilityLabel={`Dami para sa ${item.query}`}
                       />
                       {parsePositiveQuantity(edit.quantityText) === null && (

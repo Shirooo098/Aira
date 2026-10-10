@@ -1,3 +1,4 @@
+import { colors } from './theme.ts';
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
@@ -287,7 +288,7 @@ export function StockActionModal({
                 <TextInput
                   style={styles.input}
                   placeholder={`hal. 10, 25, 0 (buong ${product.unit})`}
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.muted}
                   value={quantityInput}
                   onChangeText={(v) => {
                     setQuantityInput(v);
@@ -307,7 +308,7 @@ export function StockActionModal({
                 <TextInput
                   style={styles.input}
                   placeholder="hal. Lingguhang bilang, audit, nasira"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.muted}
                   value={noteInput}
                   onChangeText={setNoteInput}
                   editable={!submitting}
@@ -363,7 +364,7 @@ export function StockActionModal({
                 <TextInput
                   style={styles.input}
                   placeholder={`hal. 12, 24, 50 (dapat higit sa 0)`}
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.muted}
                   value={deliveryInput}
                   onChangeText={(v) => {
                     setDeliveryInput(v);
@@ -383,7 +384,7 @@ export function StockActionModal({
                 <TextInput
                   style={styles.input}
                   placeholder="hal. Invoice #5021, Delivery mula sa Puregold"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.muted}
                   value={noteInput}
                   onChangeText={setNoteInput}
                   editable={!submitting}
@@ -440,7 +441,7 @@ export function StockActionModal({
                 <TextInput
                   style={styles.input}
                   placeholder="hal. 18.50, 75, 100.00"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.muted}
                   value={priceInput}
                   onChangeText={(v) => {
                     setPriceInput(v);
@@ -498,7 +499,7 @@ export function StockActionModal({
                 {loadingHistory ? (
                   <ActivityIndicator
                     size="small"
-                    color="#0284c7"
+                    color={colors.primary}
                     style={{ marginVertical: 20 }}
                   />
                 ) : historyList.length === 0 ? (
@@ -531,7 +532,7 @@ export function StockActionModal({
                             : 'Wala ➔ '}
                           {`${m.newQuantity} ${product.unit}`}
                           {m.quantityDelta !== 0 && (
-                            <Text style={{ color: m.quantityDelta > 0 ? '#15803d' : '#b91c1c' }}>
+                            <Text style={{ color: m.quantityDelta > 0 ? colors.success : colors.error }}>
                               {` (${m.quantityDelta > 0 ? '+' : ''}${m.quantityDelta})`}
                             </Text>
                           )}
@@ -581,7 +582,7 @@ export function StockActionModal({
                 accessibilityLabel="Kumpirmahin ang bagong bilang"
               >
                 {submitting ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text style={styles.confirmButtonText}>
                     Kumpirmahin ang Bilang
@@ -603,7 +604,7 @@ export function StockActionModal({
                 accessibilityLabel="Kumpirmahin ang delivery"
               >
                 {submitting ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text style={styles.confirmButtonText}>
                     Kumpirmahin ang Delivery
@@ -625,7 +626,7 @@ export function StockActionModal({
                 accessibilityLabel="Kumpirmahin ang bagong presyo"
               >
                 {submitting ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text style={styles.confirmButtonText}>
                     Kumpirmahin ang Presyo

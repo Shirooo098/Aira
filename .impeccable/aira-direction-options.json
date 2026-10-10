@@ -1,0 +1,227 @@
+{
+  "title": "Aira: choose a price-lookup theme",
+  "question": "Compare the mockups before coding. All show the same sample product. Choose a direction, request changes, or ask for a fresh set.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Tindahan Window",
+      "kicker": "THE ROLL",
+      "lineage": "The familiar service window of a neighborhood tindahan",
+      "thesis": "A warm frame opens directly onto the answer you need.",
+      "palette": [
+        "#FAF7EF",
+        "#E9B44C",
+        "#183F36",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "flat honey-colored framing",
+        "rounded native controls"
+      ],
+      "viewport": "A compact Aira header; one large lookup field; a framed product and price; speech and typing actions below.",
+      "risk": "The frame must stay light enough to leave room for product details.",
+      "comp": ".impeccable/mocks/decision/tindahan-window.png",
+      "raised": [
+        {
+          "from": "Catalog grid",
+          "raise": "Give every variant and selling unit a stable, immediately scannable position."
+        },
+        {
+          "from": "Monochrome product proof",
+          "raise": "Make the answer earn the screen: secondary decoration cannot compete with it."
+        },
+        {
+          "from": "Garden guide",
+          "raise": "Commit the warm framing to one continuous region, rather than sprinkling accents."
+        },
+        {
+          "from": "Reference rail",
+          "raise": "Keep product identity and its price aligned as one reading unit."
+        },
+        {
+          "from": "Type specimen",
+          "raise": "Build a deliberate price-to-caption scale contrast."
+        }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Friendly Price Board",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Handwritten neighborhood price signs, translated into legible Android typography",
+      "thesis": "A welcoming shop sign makes the product and price impossible to miss.",
+      "palette": [
+        "#F5F1FF",
+        "#4D306D",
+        "#FFB974",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "flat lilac ground",
+        "large ink-purple lettering",
+        "soft apricot selection"
+      ],
+      "viewport": "Short conversational prompt, large search field, a bold lavender price board, and a prominent speech button.",
+      "risk": "The familiar search-and-answer structure is effective but less surprising.",
+      "comp": ".impeccable/mocks/decision/friendly-price-board.png"
+    },
+    {
+      "id": "challenger-ticket",
+      "label": "Price Ticket",
+      "verdict": "competitive",
+      "lineage": "Segmented boarding passes and live status boards",
+      "thesis": "A tidy lookup ticket keeps the product, unit, and price together.",
+      "palette": [
+        "#F5F7FA",
+        "#16324F",
+        "#E8F0F8",
+        "#EAA263"
+      ],
+      "materials": [
+        "clean segmented panels",
+        "tabular price figures"
+      ],
+      "viewport": "Search and speech above a segmented answer ticket; a visible correction link; native navigation below.",
+      "case": "Strong product clarity; less neighborhood warmth than the window.",
+      "risk": "Ticket segmentation can feel administrative if captions become too dense.",
+      "comp": ".impeccable/mocks/decision/price-ticket.png",
+      "board": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board.webp",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board-hero.webp"
+    },
+    {
+      "id": "declined-catalog",
+      "label": "Catalog Grid",
+      "verdict": "declined",
+      "lineage": "Catalog Grid",
+      "palette": [
+        "#F1EBDD",
+        "#191919",
+        "#D28B28"
+      ],
+      "materials": [
+        "flat semantic panels"
+      ],
+      "thesis": "An alias catalog grouped into tappable product cells.",
+      "viewport": "A dense catalog gives each product a fixed location.",
+      "risk": "Product cells would crowd the single-answer task and need imagery the catalog does not store.",
+      "case": "Declined: weaker audience identification and weaker task clarity than Tindahan Window.",
+      "kept": "Stable positions for product identity, variant, and unit.",
+      "board": "https://impeccable.style/worlds/cards/pop-culture-shelf-doujin-event-catalog.webp",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-doujin-event-catalog-hero.webp"
+    },
+    {
+      "id": "declined-mono",
+      "label": "Quiet Product Proof",
+      "verdict": "declined",
+      "lineage": "Quiet Product Proof",
+      "palette": [
+        "#F7F7F5",
+        "#191919",
+        "#6C7278"
+      ],
+      "materials": [
+        "flat semantic panels"
+      ],
+      "thesis": "A mostly neutral lookup screen proves each answer with catalog details.",
+      "viewport": "An austere answer block follows a small search field.",
+      "risk": "Lower neighborhood identification and a less inviting capture affordance.",
+      "case": "Declined: weaker audience identification and weaker task clarity than Tindahan Window.",
+      "kept": "Let the real answer dominate over decoration.",
+      "board": "https://impeccable.style/worlds/cards/digital-design-canon-monochrome-product-marketing.webp",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-monochrome-product-marketing-hero.webp"
+    },
+    {
+      "id": "declined-garden",
+      "label": "Garden Guide",
+      "verdict": "declined",
+      "lineage": "Garden Guide",
+      "palette": [
+        "#F5F1E4",
+        "#8ED462",
+        "#2C2E2A",
+        "#F5E211"
+      ],
+      "materials": [
+        "flat semantic panels"
+      ],
+      "thesis": "Organic color regions divide lookup, answer, and correction.",
+      "viewport": "The answer sits inside one swelling green region.",
+      "risk": "Spatial regions add interpretation to a simple lookup and compete with native controls.",
+      "case": "Declined: weaker audience identification and weaker task clarity than Tindahan Window.",
+      "kept": "One dominant color region instead of scattered decoration.",
+      "board": "https://impeccable.style/worlds/cards/aww2-zoo-gardens-guide-map.webp",
+      "hero": "https://impeccable.style/worlds/cards/aww2-zoo-gardens-guide-map-hero.webp"
+    },
+    {
+      "id": "declined-rail",
+      "label": "Reference Rail",
+      "verdict": "declined",
+      "lineage": "Reference Rail",
+      "palette": [
+        "#EEE6D6",
+        "#23211E",
+        "#C44536"
+      ],
+      "materials": [
+        "flat semantic panels"
+      ],
+      "thesis": "A catalog label and price share a strict reading rail.",
+      "viewport": "A narrow answer column pairs product facts around one aligned rail.",
+      "risk": "Small annotations and printed state marks weaken familiar Android interaction.",
+      "case": "Declined: weaker audience identification and weaker task clarity than Tindahan Window.",
+      "kept": "Align product identity and price as one reading unit.",
+      "board": "https://impeccable.style/worlds/cards/rw-centre-rail-reference-setting.webp",
+      "hero": "https://impeccable.style/worlds/cards/rw-centre-rail-reference-setting-hero.webp"
+    },
+    {
+      "id": "declined-type",
+      "label": "Type Specimen",
+      "verdict": "declined",
+      "lineage": "Type Specimen",
+      "palette": [
+        "#F7F7F5",
+        "#161616",
+        "#6857C8"
+      ],
+      "materials": [
+        "flat semantic panels"
+      ],
+      "thesis": "The price becomes the central specimen, supported by precise labels.",
+      "viewport": "A giant numeric answer follows a compact capture area.",
+      "risk": "A dominant numeral risks hiding variant and unit, and a slider has no honest lookup job.",
+      "case": "Declined: weaker audience identification and weaker task clarity than Tindahan Window.",
+      "kept": "Deliberate scale contrast without losing product identity.",
+      "board": "https://impeccable.style/worlds/cards/variable-font-specimen.webp",
+      "hero": "https://impeccable.style/worlds/cards/variable-font-specimen-hero.webp"
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "steer": true,
+  "canon": true,
+  "canonCard": {
+    "label": "Familiar Android",
+    "thesis": "A familiar Material-style lookup screen with careful spacing and a single strong action.",
+    "palette": [
+      "#FFFBFE",
+      "#3E516F",
+      "#DCE5F4",
+      "#1B1B1F"
+    ],
+    "materials": [
+      "tonal surfaces",
+      "native rounded controls"
+    ],
+    "viewport": "Standard top app bar, search field, answer card, speech action, and a three-destination navigation bar.",
+    "risk": "Easy to learn, but less distinct as Aira’s own theme.",
+    "comp": ".impeccable/mocks/decision/familiar-android.png"
+  },
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  }
+}

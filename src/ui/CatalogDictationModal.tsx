@@ -1,3 +1,4 @@
+import { colors } from './theme.ts';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -69,7 +70,7 @@ function CatalogField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor={colors.muted}
         keyboardType={keyboardType}
         editable={editable}
         accessibilityLabel={label.replace(/\s\*$/u, '')}
@@ -269,7 +270,7 @@ export function CatalogDictationModal({
                 multiline
                 textAlignVertical="top"
                 placeholder="hal. Lucky Me chicken, 15 pesos, 10 pieces"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.muted}
                 accessibilityLabel="Transcript ng detalye ng produkto"
               />
               <TouchableOpacity
@@ -566,7 +567,7 @@ export function CatalogDictationModal({
                 accessibilityRole="button"
                 accessibilityLabel="Kumpirmahin at i-save ang pagbabago"
               >
-                {busy ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.confirmButtonText}>Kumpirmahin at i-save</Text>}
+                {busy ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.confirmButtonText}>Kumpirmahin at i-save</Text>}
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -576,7 +577,7 @@ export function CatalogDictationModal({
                 accessibilityRole="button"
                 accessibilityLabel="Suriin ang pagbabago"
               >
-                {state.status === 'reviewing' ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.confirmButtonText}>Suriin ang pagbabago</Text>}
+                {state.status === 'reviewing' ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.confirmButtonText}>Suriin ang pagbabago</Text>}
               </TouchableOpacity>
             )}
           </View>

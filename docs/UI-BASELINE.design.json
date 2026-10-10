@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-10T00:14:15Z",
+  "title": "Design System: Aira — current UI baseline",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Clear Blue",
+        "tonalRamp": [
+          "#082f49",
+          "#0c4a6e",
+          "#075985",
+          "#0369a1",
+          "#0ea5e9",
+          "#7dd3fc",
+          "#bae6fd",
+          "#f0f9ff"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Cool Ground",
+        "tonalRamp": [
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#e2e8f0",
+          "#f8fafc"
+        ]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Deep Green",
+        "tonalRamp": [
+          "#022c22",
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#10b981",
+          "#6ee7b7",
+          "#a7f3d0",
+          "#ecfdf5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "screen-title": {
+        "displayName": "Screen title",
+        "purpose": "Main Ask Price, Sell, and Manage headings."
+      },
+      "lookup-price": {
+        "displayName": "Lookup answer",
+        "purpose": "Dominant successful price answer."
+      }
+    },
+    "shadows": [
+      {
+        "name": "stock-and-repayment",
+        "value": "Android elevation 8; shadowColor #000; offset (0,4); opacity 0.15; radius 12",
+        "purpose": "Native modal depth; not an interchangeable CSS shadow."
+      },
+      {
+        "name": "receipt-review",
+        "value": "Android elevation 5; shadowColor #000; offset (0,2); opacity 0.25; radius 4",
+        "purpose": "Existing receipt modal variant."
+      }
+    ],
+    "motion": [
+      {
+        "name": "mode-press",
+        "value": "activeOpacity 0.7",
+        "purpose": "Observed ModeSelector press feedback."
+      },
+      {
+        "name": "native-modal",
+        "value": "React Native Modal animationType slide or fade",
+        "purpose": "Platform modal entrance/exit; no custom duration documented."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "CSS preview of observed React Native styles; hover/focus outlines aid the documentation panel and are not implemented app states.",
+      "html": "<button class=\"ds-primary\">Magsalita</button>",
+      "css": ".ds-primary{background:#0369a1;color:#fff;border:0;border-radius:10px;padding:11px 16px;min-height:48px;font:800 15px system-ui;cursor:pointer}.ds-primary:hover{opacity:.9}.ds-primary:active{opacity:.7}.ds-primary:disabled{opacity:.55}.ds-primary:focus-visible{outline:2px solid #0369a1;outline-offset:3px}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "CSS preview of observed React Native styles; hover/focus outlines aid the documentation panel and are not implemented app states.",
+      "html": "<button class=\"ds-secondary\">Suriin ang teksto</button>",
+      "css": ".ds-secondary{background:#f0f9ff;color:#075985;border:1px solid #7dd3fc;border-radius:10px;padding:10px 16px;min-height:48px;font:700 14px system-ui;cursor:pointer}.ds-secondary:hover{opacity:.9}.ds-secondary:active{opacity:.7}.ds-secondary:focus-visible{outline:2px solid #0369a1;outline-offset:3px}"
+    },
+    {
+      "name": "Product input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "CSS preview of observed React Native styles; hover/focus outlines aid the documentation panel and are not implemented app states.",
+      "html": "<label class=\"ds-field\">Paninda<input class=\"ds-input\" placeholder=\"Pangalan ng produkto\"></label>",
+      "css": ".ds-field{display:grid;gap:6px;color:#334155;font:600 14px system-ui}.ds-input{min-height:48px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:0 12px;color:#1e293b;font:15px system-ui}.ds-input::placeholder{color:#64748b}.ds-input:hover{border-color:#94a3b8}.ds-input:focus-visible{outline:2px solid #0369a1;outline-offset:3px}"
+    },
+    {
+      "name": "Main modes",
+      "kind": "nav",
+      "description": "CSS preview of observed React Native styles; hover/focus outlines aid the documentation panel and are not implemented app states.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Mga mode\"><button class=\"ds-mode ds-selected\" aria-current=\"page\">Alamin ang Presyo<small>Ask Price</small></button><button class=\"ds-mode\">Benta<small>Sell</small></button><button class=\"ds-mode\">Pamahalaan<small>Manage</small></button></nav>",
+      "css": ".ds-nav{display:flex;gap:8px;padding:4px;background:#e5e7eb;border-radius:12px;font-family:system-ui}.ds-mode{flex:1;min-height:64px;padding:8px 4px;border:0;border-radius:8px;background:transparent;color:#374151;font:700 14px system-ui;cursor:pointer}.ds-mode small{display:block;margin-top:2px;color:#475569;font:12px system-ui}.ds-selected{background:#0369a1;color:#fff}.ds-selected small{color:#e0f2fe}.ds-mode:hover{opacity:.9}.ds-mode:active{opacity:.7}.ds-mode:focus-visible{outline:2px solid #0369a1;outline-offset:3px}"
+    },
+    {
+      "name": "Report period",
+      "kind": "chip",
+      "description": "CSS preview of observed React Native styles; hover/focus outlines aid the documentation panel and are not implemented app states.",
+      "html": "<button class=\"ds-period\" aria-pressed=\"true\">Ngayong Araw</button>",
+      "css": ".ds-period{background:#0369a1;color:#fff;border:1px solid #0369a1;border-radius:20px;padding:8px 14px;min-height:48px;font:700 14px system-ui;cursor:pointer}.ds-period:hover{opacity:.9}.ds-period:active{opacity:.7}.ds-period:focus-visible{outline:2px solid #0369a1;outline-offset:3px}"
+    },
+    {
+      "name": "Debt card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat, bordered card from the current aged-utang view; synthetic example.",
+      "html": "<article class=\"ds-card\"><strong>Ana</strong><p>Natitirang utang: ₱100.00</p><span>Age unknown</span></article>",
+      "css": ".ds-card{background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:16px;color:#334155;font:16px/24px system-ui}.ds-card strong{color:#0f172a;font:600 18px system-ui}.ds-card p{margin:8px 0}"
+    },
+    {
+      "name": "Lookup answer",
+      "kind": "custom",
+      "description": "Current green lookup result; synthetic catalog data, not a replacement mockup.",
+      "html": "<article class=\"ds-answer\"><strong>Lucky Me Pancit Canton</strong><p>Chilimansi · 60 g · pakete</p><b>₱15.00</b></article>",
+      "css": ".ds-answer{background:#f0fdf4;border:2px solid #22c55e;border-radius:16px;padding:20px;font-family:system-ui}.ds-answer strong{color:#14532d;font:800 24px system-ui}.ds-answer p{color:#166534;font:16px system-ui;margin:4px 0 16px}.ds-answer b{color:#15803d;font:900 32px system-ui}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Helpful Companion",
+    "overview": "The owner should feel helped by familiar Filipino language, clear answers, and controls that invite correction. The user chose this description on 2026-10-10 and asked for a warmer, less formal redesign.\n\nThis document records the existing light UI, not the proposed replacement. The implementation currently uses blue actions, cool slate backgrounds, rounded white cards, and substantial bold text. The user considers that UI to lack a clear theme; preserving these values is not a redesign requirement.",
+    "keyCharacteristics": [
+      "Filipino-first labels, with English supporting labels on the main mode selector.",
+      "Visible offline identity and editable speech transcripts.",
+      "Card-based forms, lists, summaries, and explicit review actions.",
+      "Large monetary answers relative to supporting product details."
+    ],
+    "rules": [
+      {
+        "name": "State Clarity",
+        "body": "Pair state colors with text, selection indicators, or symbols. Debt and payment status must remain understandable without color.",
+        "section": "colors"
+      },
+      {
+        "name": "Answer First",
+        "body": "Keep the product name, variant, selling unit, and price readable together; an enlarged price must not obscure which product it belongs to.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do retain Filipino-first task language and editable speech input.",
+      "Do make product identity, variant, unit, and money visible at review.",
+      "Do keep explicit confirmation and visible pending/error states.",
+      "Do preserve safe areas, accessible names, and selected/disabled semantics when replacing controls.",
+      "Do validate the replacement on Android with large text and TalkBack."
+    ],
+    "donts": [
+      "Don't treat this baseline palette as an approved replacement theme.",
+      "Don't hide ambiguity, unknown products, missing history, or payment uncertainty.",
+      "Don't make audio or color the only indication of mode or state.",
+      "Don't replace owner review with automatic saves.",
+      "Don't claim dark theme, tablet support, or device acceptance from these source observations."
+    ]
+  }
+}

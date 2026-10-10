@@ -1,23 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  AppState,
-  Linking,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { AppState, Linking } from 'react-native';
 import { createSpeechSessionController, type SpeechSessionState } from '../speech/speech-session.ts';
 import { createWhisperAdapter } from '../speech/whisper-adapter.ts';
-import { speechTranscriptStyles as styles } from './speech-transcript-styles.ts';
+import { SpeechTranscriptControls } from './SpeechTranscriptControls.tsx';
 
-interface SpeechTranscriptInputProps {
+export interface SpeechTranscriptInputProps {
   onReviewedTranscript?: (text: string) => void;
   onTranscriptInvalidated?: () => void;
   reviewLabel?: string;
   title?: string;
   description?: string;
+  compact?: boolean;
 }
 
 function errorMessage(state: SpeechSessionState): string | null {
@@ -47,12 +40,14 @@ export function SpeechTranscriptInput({
   reviewLabel,
   title,
   description,
+  compact = false,
 }: SpeechTranscriptInputProps = {}): React.JSX.Element {
   const adapter = useMemo(() => createWhisperAdapter(), []);
   const onReviewedTranscriptRef = useRef(onReviewedTranscript);
   const onTranscriptInvalidatedRef = useRef(onTranscriptInvalidated);
   onReviewedTranscriptRef.current = onReviewedTranscript;
   onTranscriptInvalidatedRef.current = onTranscriptInvalidated;
+
   const invalidateTranscript = () => {
     try {
       onTranscriptInvalidatedRef.current?.();
@@ -60,9 +55,11 @@ export function SpeechTranscriptInput({
       // A consumer callback must not interrupt capture cleanup or startup.
     }
   };
+
   const session = useMemo(() => createSpeechSessionController(adapter, {
     onReviewedTranscript: (text) => onReviewedTranscriptRef.current?.(text),
   }), [adapter]);
+
   const [state, setState] = useState<SpeechSessionState>(() => session.getState());
   const [reviewedDraft, setReviewedDraft] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState(false);
@@ -182,6 +179,12 @@ export function SpeechTranscriptInput({
     setReviewedDraft(draft);
   };
 
+  const handleEditDraft = (text: string) => {
+    setReviewedDraft(null);
+    invalidateTranscript();
+    session.edit(text);
+  };
+
   const handleOpenSettings = () => {
     setSettingsError(false);
     void Linking.openSettings().catch(() => setSettingsError(true));
@@ -211,163 +214,30 @@ export function SpeechTranscriptInput({
             : 'Handa nang makinig offline.';
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title ?? 'Gamitin ang boses'}</Text>
-      <Text style={styles.description}>
-        {description ?? 'Magsalita sa Filipino o Taglish, hal. “Magkano ang Coke?” Suriin muna ang transcript bago hanapin sa catalog; walang awtomatikong sine-save.'}
-      </Text>
-
-      <View style={styles.statusRow}>
-        {busy && <ActivityIndicator size="small" color="#0284c7" />}
-        <Text style={styles.statusText} accessibilityLiveRegion="polite">
-          {statusText}
-        </Text>
-      </View>
-
-      {errorText && (
-        <View style={styles.errorBox} accessibilityRole="alert">
-          <Text style={styles.errorText}>{errorText}</Text>
-          {permissionDenied && (
-            <Pressable
-              style={styles.settingsButton}
-              onPress={handleOpenSettings}
-              accessibilityRole="button"
-              accessibilityLabel="Buksan ang Settings para payagan ang mikropono"
-            >
-              <Text style={styles.secondaryButtonText}>Buksan ang Settings</Text>
-            </Pressable>
-          )}
-          {settingsError && (
-            <Text style={styles.settingsError}>Hindi mabuksan ang Settings. Maaari mo itong buksan mula sa Android Settings.</Text>
-          )}
-        </View>
-      )}
-
-      {!state.prepared ? (
-        <Pressable
-          style={[styles.primaryButton, busy && styles.buttonDisabled]}
-          onPress={prepareSpeech}
-          disabled={busy}
-          accessibilityRole="button"
-          accessibilityLabel={state.status === 'preparing' ? 'Inihahanda ang boses' : 'Ihanda ang offline na pagkilala sa boses'}
-        >
-          <Text style={styles.primaryButtonText}>
-            {state.status === 'preparing' ? 'Inihahanda...' : state.status === 'error' ? 'Subukang Ihanda Muli' : 'Ihanda ang boses'}
-          </Text>
-        </Pressable>
-      ) : (
-        <>
-          {(state.status === 'ready' || state.status === 'starting' || state.status === 'recording') && (
-            <Pressable
-              accessible={false}
-              style={[styles.holdButton, !holdEnabled && styles.buttonDisabled]}
-              onPressIn={handleHoldStart}
-              onPressOut={handleHoldEnd}
-              disabled={!holdEnabled}
-            >
-              <Text style={styles.microphoneIcon} aria-hidden>
-                🎙️
-              </Text>
-              <Text style={styles.holdButtonText}>
-                {state.status === 'recording'
-                  ? 'Nakikinig — pakawalan upang tapusin'
-                  : state.status === 'starting'
-                    ? 'Inihahanda ang mikropono...'
-                    : 'Pindutin at hawakan para magsalita'}
-              </Text>
-            </Pressable>
-          )}
-
-          {(state.status === 'ready' || state.status === 'starting' || state.status === 'recording') && (
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={toggleAccessibleCapture}
-              accessibilityRole="button"
-              accessibilityLabel={accessibleCaptureLabel}
-            >
-              <Text style={styles.secondaryButtonText}>{accessibleCaptureLabel}</Text>
-            </Pressable>
-          )}
-
-          {state.status === 'starting' || state.status === 'recording' || state.status === 'transcribing' ? (
-            <Pressable
-              style={styles.cancelButton}
-              onPress={handleCancel}
-              accessibilityRole="button"
-              accessibilityLabel="Kanselahin at itapon ang kasalukuyang pag-record"
-            >
-              <Text style={styles.cancelButtonText}>Kanselahin</Text>
-            </Pressable>
-          ) : null}
-
-          {(state.status === 'error' || state.status === 'review') && (
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={handleRetry}
-              accessibilityRole="button"
-              accessibilityLabel="Magsalita muli"
-            >
-              <Text style={styles.secondaryButtonText}>Magsalita Muli</Text>
-            </Pressable>
-          )}
-        </>
-      )}
-
-      {state.status === 'recording' && state.recognizedTranscript.length > 0 && (
-        <Text style={styles.partialTranscript} accessibilityLiveRegion="polite">
-          Pansamantalang pagkilala: {state.recognizedTranscript}
-        </Text>
-      )}
-
-      {state.status === 'review' && state.recognizedTranscript.length > 0 && (
-        <View style={styles.transcriptSection}>
-          <Text style={styles.transcriptLabel}>Unang pagkilala</Text>
-          <Text style={styles.recognizedText} accessibilityLabel={`Unang nakilalang transcript: ${state.recognizedTranscript}`}>
-            {state.recognizedTranscript}
-          </Text>
-
-          <Text style={styles.transcriptLabel}>Iwasto kung kailangan</Text>
-          <TextInput
-            style={styles.transcriptInput}
-            value={state.draft}
-            onChangeText={(text) => {
-              setReviewedDraft(null);
-              invalidateTranscript();
-              session.edit(text);
-            }}
-            placeholder="Dito lalabas ang transcript"
-            placeholderTextColor="#94a3b8"
-            multiline
-            textAlignVertical="top"
-            autoCapitalize="sentences"
-            accessibilityLabel="I-edit ang transcript"
-          />
-
-          {reviewedDraft !== null && reviewedDraft === state.draft ? (
-            <Text style={styles.reviewedNotice} accessibilityLiveRegion="polite">
-              Nasuri ang transcript. Maaari mo pa itong itama o itapon.
-            </Text>
-          ) : (
-            <Pressable
-              style={styles.primaryButton}
-              onPress={handleReview}
-              accessibilityRole="button"
-              accessibilityLabel={reviewLabel ?? 'Markahang nasuri ang transcript'}
-            >
-              <Text style={styles.primaryButtonText}>{reviewLabel ?? 'Markahang Nasuri'}</Text>
-            </Pressable>
-          )}
-
-          <Pressable
-            style={styles.discardButton}
-            onPress={handleDiscard}
-            accessibilityRole="button"
-            accessibilityLabel="Itapon ang transcript"
-          >
-            <Text style={styles.discardButtonText}>Itapon ang transcript</Text>
-          </Pressable>
-        </View>
-      )}
-    </View>
+    <SpeechTranscriptControls
+      compact={compact}
+      state={state}
+      busy={busy}
+      holdEnabled={holdEnabled}
+      errorText={errorText}
+      permissionDenied={permissionDenied}
+      settingsError={settingsError}
+      statusText={statusText}
+      accessibleCaptureLabel={accessibleCaptureLabel}
+      reviewedDraft={reviewedDraft}
+      reviewLabel={reviewLabel}
+      title={title}
+      description={description}
+      onPrepare={prepareSpeech}
+      onHoldStart={handleHoldStart}
+      onHoldEnd={handleHoldEnd}
+      onToggleAccessibleCapture={toggleAccessibleCapture}
+      onCancel={handleCancel}
+      onRetry={handleRetry}
+      onReview={handleReview}
+      onDiscard={handleDiscard}
+      onEditDraft={handleEditDraft}
+      onOpenSettings={handleOpenSettings}
+    />
   );
 }

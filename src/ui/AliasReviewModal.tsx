@@ -1,3 +1,4 @@
+import { colors } from './theme.ts';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -182,7 +183,7 @@ export function AliasReviewModal({
               value={aliasText}
               onChangeText={handleAliasChange}
               placeholder="hal. softdrinks, sabon ni ate"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.muted}
               editable={!saving}
               returnKeyType="done"
               onSubmitEditing={handleReview}
@@ -195,7 +196,7 @@ export function AliasReviewModal({
 
             {reviewing && (
               <View style={styles.statusRow} accessibilityRole="progressbar" accessibilityLabel="Sinusuri ang bansag">
-                <ActivityIndicator size="small" color="#0284c7" />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.statusText}>Sinusuri ang bansag…</Text>
               </View>
             )}
@@ -260,7 +261,7 @@ export function AliasReviewModal({
                 accessibilityLabel="Kumpirmahin at itala ang bansag"
                 accessibilityState={{ disabled: saving, busy: saving }}
               >
-                {saving ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryButtonText}>Kumpirmahin</Text>}
+                {saving ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.primaryButtonText}>Kumpirmahin</Text>}
               </TouchableOpacity>
             )}
 
@@ -273,7 +274,7 @@ export function AliasReviewModal({
                 accessibilityLabel="Suriin ang bansag bago itala"
                 accessibilityState={{ disabled: !aliasText.trim() || reviewing || saving, busy: reviewing }}
               >
-                {reviewing ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryButtonText}>Suriin</Text>}
+                {reviewing ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.primaryButtonText}>Suriin</Text>}
               </TouchableOpacity>
             )}
           </View>

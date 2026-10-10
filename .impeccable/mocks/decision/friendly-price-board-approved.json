@@ -1,0 +1,10 @@
+{
+  "prompt": "Edit the attached Aira Android price lookup UI mockup with exactly one change: remove the entire green Offline status badge beside the Aira logo at the top, including its green dot, the word Offline, and its pale-green pill background. Fill that area with the same plain background already behind the header. Keep the Aira wordmark and its little apricot rays in their exact location. Preserve every other element unchanged: portrait dimensions, status bar, text, search field, apricot Magsalita button, correction link, lilac product/result panel, product name and variant, ₱15.00 price, labels, bottom navigation, spacing, icon placement, typography, colors, and gesture bar. Do not redesign, restyle, reword, recrop, or reflow any other part. The requested removal is because the app is inherently offline; no replacement status indicator.",
+  "approved": true,
+  "approvalSource": "User selected the attached Friendly Price Board image and requested removing the top Offline badge on 2026-10-10.",
+  "kind": "approved-direction-reference",
+  "generator": "built-in image_gen",
+  "createdOn": "2026-10-10",
+  "basedOn": "friendly-price-board.png",
+  "revision": "Remove redundant top Offline status; preserve the chosen composition."
+}

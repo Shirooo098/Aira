@@ -1,3 +1,4 @@
+import { colors, radii } from './theme.ts';
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
@@ -173,7 +174,7 @@ export function ReceiptReviewModal({
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.title}>📄 Pagsusuri ng Resibo ng GCash</Text>
+            <Text style={styles.title}>Pagsusuri ng Resibo ng GCash</Text>
             <Text style={styles.subtitle}>
               Suriin at iwasto ang impormasyon mula sa resibo bago i-save.
             </Text>
@@ -277,9 +278,9 @@ export function ReceiptReviewModal({
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
                 {saving ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
-                  <Text style={styles.saveBtnText}>💾 I-save ang Resibo</Text>
+                  <Text style={styles.saveBtnText}>I-save ang Resibo</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -293,14 +294,14 @@ export function ReceiptReviewModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.backdrop,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   modalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
     maxHeight: '90%',
     width: '100%',
     padding: 18,
@@ -316,57 +317,57 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.primaryStrong,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.muted,
     marginBottom: 14,
   },
   infoBanner: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceSoft,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#0284c7',
+    borderLeftColor: colors.primary,
   },
   infoBannerText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0369a1',
+    color: colors.primary,
   },
   warningBanner: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: colors.warningSoft,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
+    borderLeftColor: colors.warningOutline,
   },
   warningTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#b45309',
+    color: colors.warning,
     marginBottom: 2,
   },
   warningText: {
     fontSize: 12,
-    color: '#92400e',
+    color: colors.warning,
   },
   noteBanner: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
     borderRadius: 6,
     padding: 8,
     marginBottom: 8,
   },
   noteText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.primaryMuted,
   },
   errorBanner: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.errorSoft,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
@@ -375,7 +376,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
-    color: '#b91c1c',
+    color: colors.error,
   },
   formGroup: {
     marginBottom: 12,
@@ -383,49 +384,59 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#334155',
+    color: colors.text,
     marginBottom: 4,
   },
   input: {
+    minHeight: 48,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
+    borderColor: colors.outline,
+    borderRadius: radii.field,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#1e293b',
-    backgroundColor: '#ffffff',
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   readOnlyInput: {
-    backgroundColor: '#f8fafc',
-    color: '#64748b',
+    backgroundColor: colors.background,
+    color: colors.muted,
     fontSize: 12,
   },
   buttonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     gap: 10,
     marginTop: 16,
   },
   cancelBtn: {
+    maxWidth: '100%',
+    minHeight: 48,
+    justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    borderRadius: radii.button,
+    backgroundColor: colors.surfaceSoft,
   },
   cancelBtnText: {
-    color: '#475569',
+    textAlign: 'center',
+    color: colors.primaryMuted,
     fontWeight: '600',
     fontSize: 14,
   },
   saveBtn: {
+    maxWidth: '100%',
+    minHeight: 48,
+    justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 18,
-    borderRadius: 8,
-    backgroundColor: '#0284c7',
+    borderRadius: radii.button,
+    backgroundColor: colors.primary,
   },
   saveBtnText: {
-    color: '#ffffff',
+    textAlign: 'center',
+    color: colors.surface,
     fontWeight: '700',
     fontSize: 14,
   },

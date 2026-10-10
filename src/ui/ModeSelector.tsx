@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { AppMode } from '../types.ts';
+import { AppIcon } from './AppIcon.tsx';
+import { colors } from './theme.ts';
 
 interface ModeSelectorProps {
   currentMode: AppMode;
@@ -10,13 +12,14 @@ interface ModeSelectorProps {
 interface ModeOption {
   key: AppMode;
   label: string;
-  sublabel: string;
+  icon: 'search' | 'chart' | 'store';
+  accessibilityLabel: string;
 }
 
 const MODES: ModeOption[] = [
-  { key: 'ask-price', label: 'Alamin ang Presyo', sublabel: 'Ask Price' },
-  { key: 'sell', label: 'Benta', sublabel: 'Sell' },
-  { key: 'manage', label: 'Pamahalaan', sublabel: 'Manage' },
+  { key: 'ask-price', label: 'Presyo', icon: 'search', accessibilityLabel: 'Presyo' },
+  { key: 'sell', label: 'Benta', icon: 'chart', accessibilityLabel: 'Benta' },
+  { key: 'manage', label: 'Tindahan', icon: 'store', accessibilityLabel: 'Tindahan' },
 ];
 
 export function ModeSelector({ currentMode, onSelectMode }: ModeSelectorProps): React.JSX.Element {
@@ -27,18 +30,22 @@ export function ModeSelector({ currentMode, onSelectMode }: ModeSelectorProps): 
         return (
           <TouchableOpacity
             key={mode.key}
-            style={[styles.button, isActive && styles.activeButton]}
+            style={styles.tabButton}
             onPress={() => onSelectMode(mode.key)}
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
-            accessibilityLabel={`${mode.label}, ${mode.sublabel}`}
+            accessibilityLabel={mode.accessibilityLabel}
             activeOpacity={0.7}
           >
-            <Text style={[styles.label, isActive && styles.activeLabel]}>
+            <View style={[styles.iconCapsule, isActive && styles.activeIconCapsule]}>
+              <AppIcon
+                name={mode.icon}
+                size={22}
+                color={isActive ? colors.primary : colors.muted}
+              />
+            </View>
+            <Text style={[styles.label, isActive ? styles.activeLabel : styles.inactiveLabel]}>
               {mode.label}
-            </Text>
-            <Text style={[styles.sublabel, isActive && styles.activeSublabel]}>
-              {mode.sublabel}
             </Text>
           </TouchableOpacity>
         );
@@ -49,45 +56,46 @@ export function ModeSelector({ currentMode, onSelectMode }: ModeSelectorProps): 
 
 const styles = StyleSheet.create({
   container: {
+    minHeight: 72,
     flexDirection: 'row',
-    backgroundColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 4,
-    marginHorizontal: 16,
-    marginVertical: 8,
-  },
-  button: {
-    flex: 1,
-    minHeight: 52,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    paddingHorizontal: 4,
+  },
+  tabButton: {
+    flex: 1,
+    minHeight: 48,
+    minWidth: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    paddingVertical: 4,
   },
-  activeButton: {
-    backgroundColor: '#0284c7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+  iconCapsule: {
+    width: 60,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  activeIconCapsule: {
+    backgroundColor: colors.selected,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
+    fontSize: 12,
+    marginTop: 3,
     textAlign: 'center',
   },
   activeLabel: {
-    color: '#ffffff',
+    color: colors.primary,
+    fontWeight: '700',
   },
-  sublabel: {
-    fontSize: 11,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  activeSublabel: {
-    color: '#e0f2fe',
+  inactiveLabel: {
+    color: colors.muted,
+    fontWeight: '500',
   },
 });

@@ -15,6 +15,8 @@ import { runMigrations } from './src/db/migrations.ts';
 import { playModeCue, disposeAudioPlayers } from './src/audio/cue-player.ts';
 import { isSpeechCaptureActive } from './src/speech/whisper-adapter.ts';
 import type { AppMode } from './src/types.ts';
+import { colors, radii } from './src/ui/theme.ts';
+import { AppIcon } from './src/ui/AppIcon.tsx';
 import { ModeSelector } from './src/ui/ModeSelector.tsx';
 import { AskPriceView } from './src/ui/AskPriceView.tsx';
 import { SellView } from './src/ui/SellView.tsx';
@@ -72,16 +74,17 @@ export default function App(): React.JSX.Element {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-        {/* Top App Header */}
+        {/* Top App Header: Aira wordmark with small apricot rays, no offline badge */}
         <View style={styles.appHeader}>
-          <View>
-            <Text style={styles.appName}>Aira</Text>
-            <Text style={styles.appDescriptor}>Offline Tindahan Assistant</Text>
-          </View>
-          <View style={styles.offlineBadge}>
-            <Text style={styles.offlineText}>Offline</Text>
+          <View style={styles.brandRow}>
+            <Text style={styles.brandName}>Aira</Text>
+            <View style={styles.raysContainer} accessible={false} importantForAccessibility="no-hide-descendants">
+              <View style={[styles.ray, styles.rayTop]} />
+              <View style={[styles.ray, styles.rayMiddle]} />
+              <View style={[styles.ray, styles.rayBottom]} />
+            </View>
           </View>
         </View>
 
@@ -95,7 +98,7 @@ export default function App(): React.JSX.Element {
               accessibilityRole="button"
               style={styles.warningDismiss}
             >
-              <Text style={styles.warningDismissText}>✕</Text>
+              <AppIcon name="close" color={colors.warning} />
             </TouchableOpacity>
           </View>
         )}
@@ -103,7 +106,7 @@ export default function App(): React.JSX.Element {
         {/* Database Initialization Loading State */}
         {initializing && (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#0284c7" />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Inihahanda ang database ng Aira...</Text>
           </View>
         )}
@@ -124,19 +127,19 @@ export default function App(): React.JSX.Element {
           </View>
         )}
 
-        {/* Main Content when DB is Ready */}
+        {/* Main Content when DB is Ready: viewSlot then ModeSelector below */}
         {!initializing && !initError && db && (
           <View style={styles.contentContainer}>
-            <ModeSelector
-              currentMode={activeMode}
-              onSelectMode={handleSelectMode}
-            />
-
             <View style={styles.viewSlot}>
               {activeMode === 'ask-price' && <AskPriceView db={db} />}
               {activeMode === 'sell' && <SellView db={db} />}
               {activeMode === 'manage' && <ManageProductsView db={db} />}
             </View>
+
+            <ModeSelector
+              currentMode={activeMode}
+              onSelectMode={handleSelectMode}
+            />
           </View>
         )}
       </SafeAreaView>
@@ -147,65 +150,85 @@ export default function App(): React.JSX.Element {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   appHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 6,
+    backgroundColor: colors.background,
   },
-  appName: {
-    fontSize: 22,
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandName: {
+    fontSize: 28,
     fontWeight: '900',
-    color: '#0284c7',
-    letterSpacing: 0.5,
+    color: colors.primary,
+    letterSpacing: -0.5,
   },
-  appDescriptor: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#64748b',
+  raysContainer: {
+    width: 14,
+    height: 14,
+    marginLeft: 3,
+    marginBottom: 10,
+    position: 'relative',
   },
-  offlineBadge: {
-    backgroundColor: '#ecfdf5',
-    borderWidth: 1,
-    borderColor: '#a7f3d0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+  ray: {
+    position: 'absolute',
+    backgroundColor: colors.accent,
+    borderRadius: 1.5,
   },
-  offlineText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#059669',
+  rayTop: {
+    width: 7,
+    height: 2.5,
+    top: 2,
+    left: 2,
+    transform: [{ rotate: '-40deg' }],
+  },
+  rayMiddle: {
+    width: 7,
+    height: 2.5,
+    top: 6,
+    left: 4,
+    transform: [{ rotate: '5deg' }],
+  },
+  rayBottom: {
+    width: 7,
+    height: 2.5,
+    top: 10,
+    left: 2,
+    transform: [{ rotate: '50deg' }],
   },
   warningBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fffbeb',
+    backgroundColor: colors.warningSoft,
     borderBottomWidth: 1,
-    borderBottomColor: '#fde68a',
+    borderBottomColor: colors.warningOutline,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   warningText: {
     flex: 1,
     fontSize: 12,
-    color: '#92400e',
+    color: colors.warning,
     fontWeight: '500',
   },
   warningDismiss: {
-    paddingLeft: 8,
-    paddingVertical: 4,
+    minWidth: 48,
+    minHeight: 48,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   warningDismissText: {
     fontSize: 14,
-    color: '#92400e',
+    color: colors.warning,
     fontWeight: '700',
   },
   centerContainer: {
@@ -217,28 +240,30 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 15,
-    color: '#64748b',
+    color: colors.muted,
     fontWeight: '500',
   },
   errorTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#b91c1c',
+    color: colors.error,
     marginBottom: 8,
     textAlign: 'center',
   },
   errorMessage: {
     fontSize: 14,
-    color: '#4b5563',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 20,
   },
   retryButton: {
-    backgroundColor: '#0284c7',
+    backgroundColor: colors.primary,
+    minHeight: 48,
+    justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radii.button,
   },
   retryButtonText: {
     color: '#ffffff',

@@ -1,3 +1,4 @@
+import { colors, radii } from './theme.ts';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -83,20 +84,20 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
             <Text style={styles.backButtonText}>← Bumalik</Text>
           </TouchableOpacity>
         )}
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 120 }}>
           <Text style={styles.title}>Ulat ng Tindahan</Text>
           <Text style={styles.subtitle}>
             {report?.period ? report.period.labelFilipino : 'Inihahanda ang ulat...'}
           </Text>
         </View>
         <TouchableOpacity
-          style={styles.refreshButton}
+          style={[styles.refreshButton, loading && styles.buttonDisabled]}
           onPress={() => void loadReport()}
           disabled={loading}
           accessibilityRole="button"
           accessibilityLabel="I-refresh ang ulat"
         >
-          <Text style={styles.refreshButtonText}>🔄 I-refresh</Text>
+          <Text style={styles.refreshButtonText}>I-refresh</Text>
         </TouchableOpacity>
       </View>
 
@@ -155,7 +156,7 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
                 selectedPeriod === 'prior_month' && styles.periodTabTextActive,
               ]}
             >
-              📅 Nakaraang Buwan ▾
+              Nakaraang Buwan ▾
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -209,7 +210,7 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
       {/* Main Content Area */}
       {loading && !report ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#0284c7" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Kinakalkula ang datos ng tindahan...</Text>
         </View>
       ) : (
@@ -249,10 +250,10 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
                   </Text>
                   <View style={styles.collectionBreakdown}>
                     <Text style={styles.collectionItem}>
-                      💵 Cash: {formatCentavos(report.cashCollectionsCentavos)}
+                      Cash: {formatCentavos(report.cashCollectionsCentavos)}
                     </Text>
                     <Text style={styles.collectionItem}>
-                      📱 GCash: {formatCentavos(report.gcashCollectionsCentavos)}
+                      GCash: {formatCentavos(report.gcashCollectionsCentavos)}
                     </Text>
                   </View>
                 </View>
@@ -260,7 +261,7 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
                 {/* 3. New Credit Card */}
                 <View style={styles.kpiCard}>
                   <Text style={styles.kpiLabel}>Bagong Pautang sa Panahon</Text>
-                  <Text style={[styles.kpiValueMedium, { color: '#b91c1c' }]}>
+                  <Text style={[styles.kpiValueMedium, { color: colors.error }]}>
                     {formatCentavos(report.newCreditCentavos)}
                   </Text>
                   <Text style={styles.kpiSubtext}>
@@ -271,7 +272,7 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
                 {/* 4. Current Outstanding Credit (Snapshot) */}
                 <View style={styles.kpiCard}>
                   <Text style={styles.kpiLabel}>Kasalukuyang Pautang (Current Credit)</Text>
-                  <Text style={[styles.kpiValueMedium, { color: '#ea580c' }]}>
+                  <Text style={[styles.kpiValueMedium, { color: colors.warning }]}>
                     {formatCentavos(report.currentOutstandingCreditCentavos)}
                   </Text>
                   <Text style={styles.kpiSubtext}>
@@ -282,7 +283,7 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
                 {/* 5. Current Inventory (Stock Now) */}
                 <View style={styles.kpiCard}>
                   <Text style={styles.kpiLabel}>Kasalukuyang Imbentaryo (Stock Now)</Text>
-                  <Text style={[styles.kpiValueMedium, { color: '#0284c7' }]}>
+                  <Text style={[styles.kpiValueMedium, { color: colors.primary }]}>
                     {report.stockNowUnits} unit
                   </Text>
                   <Text style={styles.kpiSubtext}>
@@ -339,54 +340,64 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   headerBar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.divider,
   },
   backButton: {
-    marginRight: 10,
+    minHeight: 48,
+    minWidth: 48,
+    justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 6,
+    backgroundColor: colors.surfaceSoft,
+    borderRadius: radii.button,
   },
   backButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.text,
   },
   title: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.primaryStrong,
   },
   subtitle: {
-    fontSize: 11,
-    color: '#64748b',
+    fontSize: 12,
+    color: colors.muted,
     marginTop: 1,
   },
   refreshButton: {
+    minHeight: 48,
+    minWidth: 48,
+    justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: '#e0f2fe',
-    borderRadius: 6,
+    backgroundColor: colors.selected,
+    borderRadius: radii.button,
   },
   refreshButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#0284c7',
+    color: colors.primary,
+  },
+  buttonDisabled: {
+    opacity: 0.55,
   },
   periodTabsContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.divider,
     paddingVertical: 8,
   },
   periodTabsScroll: {
@@ -394,36 +405,38 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   periodTab: {
+    minHeight: 48,
+    justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: colors.outline,
   },
   periodTabActive: {
-    backgroundColor: '#0284c7',
-    borderColor: '#0284c7',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   periodTabText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.primaryMuted,
   },
   periodTabTextActive: {
-    color: '#ffffff',
+    color: colors.surface,
   },
   priorMonthsContainer: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.successSoft,
     borderBottomWidth: 1,
-    borderBottomColor: '#bbf7d0',
+    borderBottomColor: colors.successOutline,
     padding: 12,
     paddingHorizontal: 16,
   },
   priorMonthsTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#166534',
+    color: colors.success,
     marginBottom: 8,
   },
   priorMonthsGrid: {
@@ -432,29 +445,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   priorMonthChip: {
-    backgroundColor: '#ffffff',
+    minHeight: 48,
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#86efac',
+    borderColor: colors.successOutline,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   priorMonthChipActive: {
-    backgroundColor: '#15803d',
-    borderColor: '#15803d',
+    backgroundColor: colors.success,
+    borderColor: colors.success,
   },
   priorMonthChipText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#166534',
+    color: colors.success,
   },
   priorMonthChipTextActive: {
-    color: '#ffffff',
+    color: colors.surface,
   },
   errorBanner: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.errorSoft,
     borderBottomWidth: 1,
-    borderBottomColor: '#fecaca',
+    borderBottomColor: colors.errorOutline,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -462,19 +477,22 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    color: '#991b1b',
+    color: colors.error,
     fontSize: 13,
   },
   retryButton: {
-    backgroundColor: '#ef4444',
+    minHeight: 48,
+    minWidth: 48,
+    justifyContent: 'center',
+    backgroundColor: colors.error,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: radii.button,
     marginLeft: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
+    color: colors.surface,
+    fontSize: 14,
     fontWeight: '700',
   },
   centerContainer: {
@@ -486,7 +504,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.muted,
     fontWeight: '500',
   },
   contentScroll: {
@@ -495,16 +513,16 @@ const styles = StyleSheet.create({
   dateRangeBox: {
     marginHorizontal: 16,
     marginTop: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.divider,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
   dateRangeText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.muted,
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -514,42 +532,42 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   kpiCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.divider,
   },
   kpiCardHighlight: {
-    borderColor: '#bae6fd',
-    backgroundColor: '#f0f9ff',
+    borderColor: colors.outline,
+    backgroundColor: colors.lilac,
   },
   kpiLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.primaryMuted,
     textTransform: 'uppercase',
   },
   kpiValueLarge: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#0f172a',
+    color: colors.primaryStrong,
     marginTop: 4,
   },
   kpiValueMedium: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.primaryStrong,
     marginTop: 4,
   },
   kpiSubtext: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.primaryMuted,
     marginTop: 4,
   },
   kpiWarningSubtext: {
     fontSize: 12,
-    color: '#b91c1c',
+    color: colors.error,
     marginTop: 2,
     fontWeight: '600',
   },
@@ -559,22 +577,22 @@ const styles = StyleSheet.create({
   },
   collectionItem: {
     fontSize: 13,
-    color: '#334155',
+    color: colors.text,
     fontWeight: '600',
   },
   topProductsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     marginHorizontal: 16,
     marginTop: 14,
-    borderRadius: 12,
+    borderRadius: radii.card,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.divider,
   },
   topProductsHeader: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.primaryStrong,
     marginBottom: 12,
   },
   emptyProductsBox: {
@@ -584,11 +602,11 @@ const styles = StyleSheet.create({
   emptyProductsTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.muted,
   },
   emptyProductsSubtext: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.muted,
     marginTop: 2,
     textAlign: 'center',
   },
@@ -597,13 +615,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.surfaceSoft,
   },
   rankBadge: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#e0f2fe',
+    backgroundColor: colors.selected,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -611,7 +629,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0284c7',
+    color: colors.primary,
   },
   productInfo: {
     flex: 1,
@@ -619,11 +637,11 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.text,
   },
   productMeta: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.muted,
     marginTop: 1,
   },
   productStats: {
@@ -632,11 +650,11 @@ const styles = StyleSheet.create({
   productQty: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#059669',
+    color: colors.success,
   },
   productRev: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.muted,
     marginTop: 1,
   },
 });

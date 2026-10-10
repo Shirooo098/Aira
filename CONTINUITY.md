@@ -1,146 +1,59 @@
 # Continuity
 
-## Ticket #10 — native build unblocked
-
-- 2026-10-10 [USER] Requested build configuration work to unblock #10 APK verification.
-- 2026-10-10 [TOOL] Extended the repeatable setup script to guard Whisper 0.7.4 and use the host AGP when integrated, leaving its AGP 7.2.1 buildscript only for standalone library builds. This clears the duplicate legacy dependency tree without framework/package upgrades.
-- 2026-10-10 [TOOL] Online arm64 debug APK build passed in 9m 38s; offline rebuild passed in 17s. Bundled Latin OCR assets/native pipeline, Whisper libraries/model verified inside APK. Artifact: android/app/build/outputs/apk/debug/app-debug.apk, 160853925 bytes; SHA-256 57520dc733ee10ac570361cd1b17ebfdadfe02a65828a65670a52ce62bc729b8.
-- 2026-10-10 [TOOL] Supersedes the earlier native dependency blocker. Debug build success is not release/device offline acceptance or completion of #10 UI/persistence. No commit/push performed.
-
-## Ticket #10 — dependency repair
-
-- 2026-10-10 [USER] Requested current main pull and fix for missing #10 dependencies.
-- 2026-10-10 [TOOL] Pulled main to 22eefd6 and fast-forwarded feat/#10-gcash-receipt-ocr. Installed pinned @react-native-ml-kit/text-recognition 2.0.0 plus SDK-compatible expo-image-picker/file-system; configured camera/photo plugin and reproducible Android namespace/React dependency compatibility patch. Original Infinite Red candidate was unpublished/incompatible and removed.
-- 2026-10-10 [TOOL] TypeScript, 162 tests, direct dependency resolution and Expo Android prebuild pass. No OCR UI/persistence or phone-quality completion claim; no commit/push requested. See docs/TICKET-10-RECEIPTS.md for remaining work and native verification.
-- 2026-10-10 [TOOL] Android autolinking includes TextRecognitionPackage; regenerated manifest preserves camera and speech permissions; compatibility patch is repeatable. Online APK build stalled and was stopped. Offline arm64 debug build failed configuring existing whisper.rn because Android Gradle plugin 7.2.1 and related Maven artifacts are uncached. APK/OCR runtime acceptance remains unverified.
-
-## Ticket #19 — review notebook OCR proposals before catalog import
-
-- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
-- 2026-10-10 [TOOL] Created feature branch `feat/#19-notebook-ocr`. Conducted handwriting feasibility spike documenting raster photo limitations vs vector Digital Ink strokes in `docs/TICKET-19-NOTEBOOK.md`.
-- 2026-10-10 [TOOL] Built notebook row extraction domain (`src/domain/notebook.ts`) parsing name, variant, unit, and integer centavos with clarification requirements.
-- 2026-10-10 [TOOL] Implemented action layer (`src/actions/notebook-actions.ts`) matching existing catalog products, updating prices while strictly preserving physical `stock_levels`, and deduplicating rescans.
-- 2026-10-10 [TOOL] Created owner review modal (`src/ui/NotebookReviewModal.tsx`) integrated into `ManageProductsView.tsx` with editable fields and price diff banners.
-- 2026-10-10 [TOOL] Verification: 176/176 automated tests passing (`npm test`), `npm run typecheck` passes with 0 errors, and `npx expo export --platform android` bundles cleanly (692 modules).
-
-## Ticket #10 — attach, extract and find GCash receipts
-
-- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
-- 2026-10-10 [TOOL] Created feature branch `feat/#10-gcash-receipt-ocr`. Implemented Migration 9 (`receipt_attachments`), persistence and search action layer (`src/actions/receipt-actions.ts`), and OCR service abstraction (`src/services/receipt-ocr-service.ts`).
-- 2026-10-10 [TOOL] Built atomic draft-to-sale receipt attachment transfer in `confirmGcashSale` (`src/actions/sales-actions.ts`).
-- 2026-10-10 [TOOL] Implemented owner review modal (`src/ui/ReceiptReviewModal.tsx`) integrated with `SellView.tsx` showing editable OCR proposals, amount mismatch warnings, and duplicate reference alerts without automated payment confirmation.
-- 2026-10-10 [TOOL] Verification: 171/171 automated tests passing (`npm test`), `npm run typecheck` passes cleanly with 0 errors, and `npx expo export --platform android` bundles successfully (689 modules).
-
-## Ticket #15 — store reports across calendar periods
-
-- 2026-10-10 [USER] Requested implementation of Developer 4 role following AGENTS.md branch and workflow rules.
-- 2026-10-10 [TOOL] Created feature branch `feat/#15-store-reports`. Implemented period calculation domain (`src/domain/reports.ts`) for Asia/Manila (UTC+8) calendar boundaries: Today, Monday-start Week, Month, current plus prior five months, and Year, all bounded by now.
-- 2026-10-10 [TOOL] Implemented report actions (`src/actions/report-actions.ts`) querying real SQLite metrics: Net sales, cancelled sales exclusions, cash/GCash collections (including partial credit sales and non-reversed repayments), new credit, current outstanding debt, stock now snapshot, and units sold ranking.
-- 2026-10-10 [TOOL] Implemented reactive UI slice (`src/ui/StoreReportsView.tsx`) integrated with tab switcher in `src/ui/ManageProductsView.tsx` with honest empty states and no unsupported profit claims.
-- 2026-10-10 [TOOL] Verification: 166/166 automated tests passing (`tests/store-reports.test.ts`), `npm run typecheck` (tsc --noEmit) passes cleanly with 0 errors, `npx expo export --platform android` bundles successfully (686 modules).
-
-## Ticket #14 — aged utang
-
-- 2026-10-10 [USER] Requested pull of current main and development of ticket #14.
-- 2026-10-10 [TOOL] Pulled main by fast-forward to 71e341c and based feat/#14-aged-utang on it; existing #12/#13 ledger contracts are merged. No commit or push performed.
-- 2026-10-10 [TOOL] Added a read-only customer aging query and Sell dashboard with oldest known debt/date/remaining amount, Philippine calendar-day priorities, visible unknown-date balances and existing reviewed repayment/history flow. Original sale-credit created_at and opening original_date remain authoritative; repayments never reset age. No schema or package changes.
-- 2026-10-10 [TOOL] Final tests: 162/162 pass, including 5 new aging suites covering real SQLite repayment/reversal/cancellation/restart and calendar boundaries. TypeScript passes. Android export passes; physical Oppo accessibility, foreground/midnight refresh and standalone offline acceptance remain pending. See docs/TICKET-14-AGING.md.
-
 ## Snapshot
-- 2026-10-10 [USER] Requested completion of Developer 4 (App Shell, OCR & Integration Lead) role and ticket status verification under AGENTS.md rules.
-- 2026-10-10 [TOOL] Ticket verification and status audit complete across all 20 tickets:
-  - 15 tickets verified CLOSED & merged to main:
-    - #1 (offline catalog & lookup - D4)
-    - #2 (offline Whisper speech - D1)
-    - #3 (product aliases - D2)
-    - #4 (stock counts & deliveries - D3)
-    - #5 (voice price lookup - D1)
-    - #6 (dictated catalog - D2)
-    - #7 (cash sales with inventory - D3)
-    - #9 (owner-confirmed GCash - D3)
-    - #10 (attach & extract GCash receipts - D4)
-    - #11 (customer credit sales - D3)
-    - #12 (oldest-first repayments - D3)
-    - #13 (cancellations & reversals - D3)
-    - #14 (aged utang dashboard - D4)
-    - #15 (calendar period store reports - D4)
-    - #19 (notebook OCR review spike - D4)
-  - 2 tickets UNBLOCKED / READY FOR AGENT (Frontier for D2):
-    - #8 (speak and correct order before checkout - D2; unblocked by #5, #7)
-    - #16 (prove bundled local agent with guarded tool request - D2; unblocked by #1)
-  - 2 tickets BLOCKED (D2):
-    - #17 (explain selected report in Filipino - D2; blocked by #15, #16)
-    - #18 (prepare restock checklist - D2; blocked by #17)
-  - 1 ticket BLOCKED (Final Milestone):
-    - #20 (verify offline demo & submission evidence - D4; blocked by #6, #8, #10, #14, #18)
-  - Developer 4 completion status:
-    - All 5 implementation tickets owned by D4 (#1, #10, #14, #15, #19) are 100% COMPLETE, merged to `main` via PRs, and closed on GitHub.
-    - Ticket #20 is strictly blocked under AGENTS.md Frontier rules until D2 completes tickets #8 and #18.
-  - Verification suite: 176/176 tests passing (`npm test`), 0 TypeScript errors (`npm run typecheck`), Android bundle exports cleanly (692 modules).
-
-
-
-
+- 2026-10-10 [USER] Goal: implement approved Friendly Price Board using astra-orchestrator; remove top Offline badge. Preserve workflows and prior uncommitted polish; Ponytail full active.
+- 2026-10-10 [USER] Constraints: strict offline operation, owner-reviewed consequential actions, integer centavos, preserve history; no new material dependencies without approval. Commit, push and pull main now explicitly authorized.
+- 2026-10-10 [CODE] Scope: presentation in App.tsx/src/ui and one palette test. Price layout and bottom navigation revised; theme shared across sales/store/reports/debt/review. Database/actions/domain/speech-session/config unchanged.
+- 2026-10-10 [TOOL] Now: source implementation and review complete; 25 focused tests, TypeScript, Android bundle export and speech presenter callback checks passed.
+- 2026-10-10 [TOOL] Git sync: origin/main advanced to fe2938f (guarded-agent ticket16); committing theme then rebasing onto remote update before combined-source checks/push. Scratch/export/questionnaire artifacts remain local.
+- 2026-10-10 [TOOL] Worker 517ca74d-7c44-420e-84f7-837064b3a82a exit0/statusERROR after network closure; process confirmed stopped. Root inspected/integrated saved edits and repaired flexible text/touch targets; not counted as successful delegation.
+- 2026-10-10 [TOOL] Next: native screenshot/layout/TalkBack/keyboard/large-font acceptance when device available. Impeccable hero gate remains open; no adb target/emulator images. No further source change required by current findings.
+- 2026-10-10 [CODE] DESIGN.md and .impeccable/design.json document runtime roles, source metrics and native limits. Approved reference: .impeccable/mocks/decision/friendly-price-board-approved.png.
+- 2026-10-10 [TOOL] Android SDK D:/Android/Sdk; default ANDROID_HOME points to absent C: location. Override per native build process. No connected device or installed emulator.
+- 2026-10-10 [TOOL] Theme bundle: .scratch/theme-export. No current release APK; prior native release packaging failed on Maven/Google DNS and was not retried in theme pass.
+- 2026-10-10 [TOOL] UNCONFIRMED: Oppo rendering, large system text, TalkBack, speech latency/RAM/accuracy, OCR accuracy, fresh-install airplane-mode acceptance, current GitHub ticket frontier.
 
 ## Done
-- 2026-10-09 [USER] Confirmed broad product: catalog/aliases, voice/text, reviewed sales/stock, GCash receipt OCR, utang and aging, dashboard periods, guarded reporting/restock agent.
-- 2026-10-09 [TOOL] Read to-spec and setup-matt-pocock-skills instructions successfully after environment retry.
-- 2026-10-09 [TOOL] Synthesized template-based draft with 52 stories, ownership, test strategy, priorities, exclusions, and open engineering decisions.
-- 2026-10-09 [USER] Approved 20 proposed vertical slice tickets and requested publish & commit to repo.
-- 2026-10-09 [TOOL] Created ready-for-agent label and published issues #1 through #20 on GitHub Shirooo098/Aira.
-- 2026-10-09 [USER] Confirmed 4-developer task allocation; requested documentation update in AGENTS.md.
-- 2026-10-09 [TOOL] Created AGENTS.md with team workstreams, non-negotiable invariants, test seams, and workflow.
+- 2026-10-09 [USER] Approved 20-ticket vertical-slice plan and four workstreams; GitHub tracker Shirooo098/Aira.
+- 2026-10-10 [USER] Brand Aira — Artificial Intelligence for Retail Assistance supersedes earlier name.
+- 2026-10-10 [CODE] Source includes catalog/aliases/stock, voice lookup/cart review, cash/GCash, utang/repayments/reversals/aging, notebook proposals and reports.
+- 2026-10-10 [TOOL] Prior native repair compiled bundled Whisper/OCR debug APK, predating current-main UI; not current release/device evidence.
+- 2026-10-10 [TOOL] Impeccable context loaded once; Android guidance/craft-floor read. Mockup stage: eight portrait concepts, full provenance, Friendly Price Board approval, edited reference without Offline badge.
+- 2026-10-10 [TOOL] Antigravity roles/model verified; read-only explorer cab31509-2da0-4bd8-bf37-df511c993752 completed exit0/statusSUCCESS. Implementation worker failed after saves; root integration followed.
+- 2026-10-10 [TOOL] Codex tester verified final theme source; independent reviewer found no material introduced findings. Runtime design docs now replace the seed.
 
 ## Decisions
-- D1 2026-10-09 [USER] Bundled models supersede first-run download proposal; phone-only target retained.
-- D2 2026-10-09 [USER] Utang included, superseding initial exclusion; oldest-first repayment, partial payment, correction history, age thresholds 3/7 days.
-- D3 2026-10-09 [USER] Philippine calendar report periods: today/week/month/current plus prior five months/year.
-- D4 2026-10-09 [USER] Four developer split: speech; catalog/understanding; transactions/data; app integration/OCR/UI.
-- D5 2026-10-09 [USER] GitHub repository Shirooo098/Aira confirmed as issue tracker destination.
-- D6 2026-10-10 [USER] Use Expo Go for foundation tests; supersedes local native build as a prerequisite for initial phone testing.
+- D1 2026-10-09 [USER] Production models bundled; no runtime model downloads or cloud fallback.
+- D2 2026-10-09 [USER] Utang: oldest-first repayment, partial payment, preserved history, 3/7-day attention bands; unknown-date rules docs/UTANG-ORDERING.md.
+- D3 2026-10-09 [USER] Reports use Philippine calendar periods: today/week/month/current plus prior five months/year.
+- D4 2026-10-09 [USER] Streams: D1 speech, D2 language, D3 transactions/schema, D4 app/OCR/integration; follow merged-blocker ticket frontier.
+- D5 2026-10-10 [USER] Expo Go foundation; speech/OCR need native builds, final offline acceptance standalone APK.
+- D6 2026-10-10 [TOOL] Prior native repair pins MLKit wrapper2.0.0/Whisper0.7.4; postinstall compatibility guards reuse host AGP and bundled OCR dependencies.
+- D7 2026-10-10 [CODE] Prior blue/green contrast polish is superseded by D8; preserved touch/validation/wrapping improvements remain.
+- D8 2026-10-10 [USER] Friendly Price Board purple/lilac/apricot selected; top Offline badge removed, offline operation unchanged. Native system face and flexible layout adapt reference to real data.
+- D9 2026-10-10 [USER] astra-orchestrator for implementation. Antigravity exploration/worker, root integration, independent Codex testing/review performed; supersedes documentation-only stage.
 
 ## Working set
-- TINDIG-SPEC.md
-- AGENTS.md
-- CONTINUITY.md
-- .scratch/tindig/TICKET-PLAN.md
-- D4-FOUNDATION-PROPOSAL.md
+- App.tsx
+- src/ui/ModeSelector.tsx
+- src/ui/AskPriceView.tsx
+- src/ui/ask-price-styles.ts
+- src/ui/theme.ts
+- src/ui/AppIcon.tsx
+- src/ui/SpeechTranscriptInput.tsx
+- src/ui/SpeechTranscriptControls.tsx
+- src/ui/speech-transcript-styles.ts
+- tests/ui-theme.test.ts
+- DESIGN.md
+- .impeccable/design.json
 
 ## Receipts
-- 2026-10-10 [TOOL] Independent reviewer subagent (conversation 6fcad9fb-4908-4065-8594-0900cc4e0b15) reviewed ticket #1: verified strict offline operation, integer centavo currency safety, guarded explicit draft review, atomic SQLite migrations, and full acceptance criteria compliance.
-- 2026-10-10 [TOOL] Verification passed: `npm test` 16/16 tests pass across 7 suites; `npm run typecheck` (tsc --noEmit) passes with 0 errors after including node types in tsconfig; `npx expo export --platform android` bundles cleanly with 645 modules.
-- 2026-10-10 [TOOL] Created docs/QUANTITY-UNITS.md documenting whole selling units, distinct variant/unit product identities, and invariants for upcoming Ticket #4 stock work.
-- 2026-10-10 [TOOL] Expo dependencies installed. npm audit reports 22 affected entries; triage in docs/DEPENDENCY-NOTES.md. No native/device pass claimed.
-- 2026-10-10 [TOOL] Antigravity explorer completed exit 0/status SUCCESS; conversation 55b28d02-da6a-4e7f-9875-405551575580 confirms docs-only foundation scope.
-- 2026-10-10 [TOOL] Node 22.14.0, npm 10.9.2, Java 21 available; adb absent from PATH. Android SDK/device availability UNCONFIRMED.
-- 2026-10-10 [TOOL] Expo official SQLite/audio/development-build docs and npm metadata consulted; proposed package versions and operational tradeoffs recorded in proposal.
-- 2026-10-09 [TOOL] Shell working again; directory enumeration found no existing entries before document creation.
-- 2026-10-09 [TOOL] No application tests, hardware inference benchmarks, dependencies, commits, or pushes performed.
-- 2026-10-09 [TOOL] Primary proposed seam: application actions against real temporary SQLite; separate actual-device acceptance for speech/OCR/offline UI.
-- 2026-10-09 [TOOL] Handwriting OCR, agent model, concrete versions, performance, backup policy, and some reversal/report semantics remain unconfirmed.
-
-## Brand update
-- 2026-10-10 [USER] Aira means Artificial Intelligence for Retail Assistance; supersedes the earlier brand decision.
-- 2026-10-10 [TOOL] GitHub confirms canonical repository Shirooo098/Aira. Inspected all 20 issues; updated issue #1, the only issue with old brand text. Verified no old brand in live titles/bodies.
-- 2026-10-10 [TOOL] Updated local specification, developer guide, ticket plan and ticket URL references. Legacy local filenames retained for stable links. No commit or push.
-
-## Ticket #10 — D4 receipt first slice
-
-- 2026-10-10 [USER] Requested starting ticket #10 and creating a branch.
-- 2026-10-10 [TOOL] Fetched main at 4c02e62; #9 is merged via f6709a1 and closed on GitHub. Created feat/#10-gcash-receipt-ocr from origin/main.
-- 2026-10-10 [TOOL] Implemented conservative receipt-text proposals and read-only amount/reference review against existing GCash sale/draft/repayment records. No payment confirmation, stock writes or schema changes.
-- 2026-10-10 [TOOL] Type checking and all 129 tests pass; 16 new receipt tests. Standards/spec reviews resolved the sender-heading ambiguity and report no remaining findings for this first slice.
-- 2026-10-10 [TOOL] Native dependency proposal and retention/consistency contract are in docs/TICKET-10-RECEIPTS.md. Requested approval for Infinite Red bundled Latin ML Kit wrapper, expo-image-picker and expo-file-system under existing dependency policy. No answer received yet; native capture/OCR, attachment persistence/search/UI and physical offline acceptance remain incomplete. No commit/push performed for #10.
-
-## Ticket #2 — D1 speech implementation
-
-- 2026-10-10 [USER] Requested astra-orchestrator to start building Ticket #2. Confirmed the Oppo is not available for testing now.
-- 2026-10-10 [TOOL] Verified #1 is merged into fetched origin/main at c2fad40. Created local branch feat/#2-offline-transcription from the current foundation/D4-document baseline, preserving existing D1 research/workflow files.
-- 2026-10-10 [TOOL] Implemented a reusable ephemeral speech-session controller, Expo PCM16 capture, bundled local Whisper adapter, push-to-talk/accessibility controls and editable/reviewable transcript in Ask price. No catalog, inventory or financial writes; no schema changes.
-- 2026-10-10 [TOOL] Pinned whisper.rn 0.7.4 plus buffer 6.0.3. Reused existing expo-audio; removed experimental extra recorder dependency. Model acquisition is build-time only, with pinned source revision and SHA-256. Multilingual tiny is provisional; base comparison remains outstanding.
-- 2026-10-10 [TOOL] Downloaded and verified tiny (77,691,713 bytes; SHA-256 be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21). Android prebuild passes and copies verified model/license/metadata to native APK assets with microphone permission enabled.
-- 2026-10-10 [TOOL] Verification: 36/36 tests and TypeScript pass; final Android JS export passes (659 modules). Windows sandbox export needed TEMP/TMP in workspace dist/export-temp. Independent Astra reviewer found no blockers after final lifecycle fixes.
-- 2026-10-10 [USER] Requested device-free tests and explicitly authorized committing/pushing Ticket #2 on feat/#2-whisper-speech.
-- 2026-10-10 [TOOL] Device-free verification rerun: 36/36 tests pass; prior final Android JS export and Android prebuild passed. Stopped the unfinished Gradle dependency-download attempt in response to the device-free testing request; no APK compilation success is claimed. Oppo accuracy/RAM/latency/offline acceptance remains pending. See docs/SPEECH-BENCHMARK.md and docs/SPEECH-INTEGRATION.md.
-- 2026-10-10 [TOOL] Prepared the Ticket #2 implementation for the requested branch. No PR publication or issue closure requested. #2 remains awaiting native/device acceptance; #5 retains the full three-second speech-to-price target.
-
+- 2026-10-10 [TOOL] Base HEAD545d06968459eaee6f3919d9aa2b2ca1454f3ed7; starting dirty UI patch .scratch/theme-before.patch (diff d2871fb117b53efae22bacb13c50740b67d48441).
+- 2026-10-10 [TOOL] Theme: 25/25 focused tests, typecheck/export exit0. Logs .scratch/theme-tests.log, theme-typecheck.log, theme-export.log. Android index-ed82e49c050ab56f4cd5d3232d2f8ed6.hbc emitted.
+- 2026-10-10 [TOOL] Ephemeral React/TS VM presenter assertions passed compact/default preparation, hold start/end, accessible toggle, cancel, edit/review/discard, retry, permission/settings error recovery.
+- 2026-10-10 [TOOL] Tested/reviewed App/src/ui/tests diff85b79eac50f455d789bb9c67d05af6a676fe27a4; theme448fb76d21fe3fdf5754f9d48544d853a83496dc, icon935cdbd6569a613ba33f151de6199cf356c079eb, presenter aeeda878246f4ab4e33457978ba186e216a6596a. No native fidelity claim.
+- 2026-10-10 [TOOL] Prior polish: 190/190 tests, TypeScript/export passed (.scratch/polish-* logs); source-only UI detector returned[]. No UI imports/native rendering checks.
+- 2026-10-10 [TOOL] Prior review caught cancellation-row overflow; wrapping fix preserved. Native release attempts exit1, latest .scratch/polish-release-final.log: DNS failures repo.maven.apache.org/dl.google.com.
+- 2026-10-10 [TOOL] npm ci restored483 locked packages and OCR/Whisper postinstall guards passed in prior build repair; package/config unchanged. Prior debug APK bundled whisper.bin, Latin MLKit assets and native libs.
+- 2026-10-10 [TOOL] Mock provenance verified: eight distinct portrait PNGs, complete embedded prompts and approved edited reference. No shipping raster UI assets added.
+- 2026-10-10 [TOOL] Final documentation checks passed: YAML/JSON, eight canonical sections, runtime color matches, six labeled source specimens, new code files <=300 lines, ledger <=100 lines, git diff --check. Source hashes still match independent verification; business/config diff empty.

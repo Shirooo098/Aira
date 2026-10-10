@@ -1,0 +1,28 @@
+{
+  "title": "Aira — chosen design",
+  "question": "Friendly Price Board selected. The redundant top Offline badge has been removed. This is the saved reference for implementation.",
+  "options": [
+    {
+      "id": "selected-friendly-price-board",
+      "label": "Friendly Price Board",
+      "kicker": "YOUR SELECTED DESIGN",
+      "thesis": "A welcoming lilac-and-apricot price lookup screen.",
+      "palette": [
+        "#F5F1FF",
+        "#4D306D",
+        "#FFB974",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "rounded native controls",
+        "bold purple typography"
+      ],
+      "viewport": "Search, speech, correction, product/price result, and three-destination navigation.",
+      "risk": "Mockup only; native responsiveness and accessibility remain to be verified.",
+      "comp": ".impeccable/mocks/decision/friendly-price-board-approved.png"
+    }
+  ],
+  "reroll": false,
+  "canon": false,
+  "steer": true
+}

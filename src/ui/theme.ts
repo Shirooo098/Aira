@@ -1,0 +1,30 @@
+// Shared native roles for the approved Friendly Price Board theme.
+export const colors = {
+  primary: '#402668',
+  primaryStrong: '#40235f',
+  primaryMuted: '#6b587f',
+  background: '#fdfbff',
+  surface: '#ffffff',
+  surfaceSoft: '#f5f1fa',
+  lilac: '#f3edff',
+  selected: '#e9ddff',
+  outline: '#d6c7e4',
+  divider: '#e8dff0',
+  accent: '#ffb974',
+  accentSoft: '#fff0df',
+  text: '#32263f',
+  muted: '#736780',
+  success: '#216c48',
+  successSoft: '#edf7ef',
+  successOutline: '#a8d0b5',
+  warning: '#85441d',
+  warningSoft: '#fff2df',
+  warningOutline: '#e8bd8b',
+  error: '#a52d40',
+  errorSoft: '#fff0f2',
+  errorOutline: '#e9b8c0',
+  disabled: '#aa9ab8',
+  backdrop: 'rgba(50, 38, 63, 0.58)',
+} as const;
+
+export const radii = { field: 18, button: 18, card: 24, dialog: 24 } as const;

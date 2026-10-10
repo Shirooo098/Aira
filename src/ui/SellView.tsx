@@ -1,3 +1,4 @@
+import { colors } from './theme.ts';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -599,13 +600,13 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                 </Text>
                 <Text style={styles.draftTotal}>{formatCentavos(draft.totalCentavos)}</Text>
               </View>
-              <Text style={{ fontSize: 12, color: '#64748b' }}>
+              <Text style={{ fontSize: 12, color: colors.muted }}>
                 {draft.items.length} aytem • {new Date(draft.createdAt).toLocaleTimeString('fil-PH', { hour: '2-digit', minute: '2-digit' })}
               </Text>
 
               {draftReceipts[draft.id] ? (
                 <TouchableOpacity
-                  style={{ backgroundColor: '#ecfdf5', borderColor: '#a7f3d0', borderWidth: 1, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                  style={{ backgroundColor: colors.successSoft, borderColor: colors.successOutline, borderWidth: 1, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                   onPress={() => {
                     setReceiptTarget({ kind: 'pending_draft', id: draft.id, expectedAmountCentavos: draft.totalCentavos });
                     setReceiptModalVisible(true);
@@ -613,14 +614,14 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                   accessibilityRole="button"
                   accessibilityLabel="Suriin ang nakalakip na resibo"
                 >
-                  <Text style={{ fontSize: 12, color: '#065f46', fontWeight: '600' }}>
-                    📄 May Resibo ({draftReceipts[draft.id].referenceNumber || 'Tingnan'})
+                  <Text style={{ fontSize: 12, color: colors.success, fontWeight: '600' }}>
+                    May Resibo ({draftReceipts[draft.id].referenceNumber || 'Tingnan'})
                   </Text>
-                  <Text style={{ fontSize: 11, color: '#047857' }}>Suriin ➜</Text>
+                  <Text style={{ fontSize: 11, color: colors.success }}>Suriin ➜</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  style={{ backgroundColor: '#f0f9ff', borderColor: '#bae6fd', borderWidth: 1, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 6, alignItems: 'center' }}
+                  style={{ backgroundColor: colors.lilac, borderColor: colors.outline, borderWidth: 1, borderRadius: 6, minHeight: 48, paddingVertical: 8, paddingHorizontal: 10, marginTop: 6, alignItems: 'center', justifyContent: 'center' }}
                   onPress={() => {
                     setReceiptTarget({ kind: 'pending_draft', id: draft.id, expectedAmountCentavos: draft.totalCentavos });
                     setReceiptModalVisible(true);
@@ -628,8 +629,8 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                   accessibilityRole="button"
                   accessibilityLabel="Ilakip ang resibo ng GCash gamit ang OCR"
                 >
-                  <Text style={{ fontSize: 12, color: '#0284c7', fontWeight: '600' }}>
-                    📎 Ilakip ang Resibo ng GCash (OCR)
+                  <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>
+                    Ilakip ang Resibo ng GCash (OCR)
                   </Text>
                 </TouchableOpacity>
               )}
@@ -667,7 +668,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
           <TextInput
             style={styles.searchInput}
             placeholder="Maghanap ng paninda..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.muted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             accessibilityLabel="Maghanap ng paninda"
@@ -675,7 +676,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
         </View>
 
         {loadingProducts ? (
-          <ActivityIndicator size="small" color="#0284c7" />
+          <ActivityIndicator size="small" color={colors.primary} />
         ) : filteredProducts.length === 0 ? (
           <Text style={styles.emptyText}>Walang nahanap na paninda.</Text>
         ) : (
@@ -731,7 +732,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
           accessibilityRole="button"
           accessibilityLabel="Idikta ang order o itama ang dami sa cart"
         >
-          <Text style={spokenOrderStyles.launcherText}>🎙️ Idikta ang order / itama ang dami</Text>
+          <Text style={spokenOrderStyles.launcherText}>Idikta ang order / itama ang dami</Text>
         </TouchableOpacity>
 
         {cart.length === 0 ? (
@@ -864,7 +865,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                       <TextInput
                         style={styles.tenderInput}
                         placeholder="hal. 50, 100, 500"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.muted}
                         value={tenderInput}
                         onChangeText={(v) => {
                           setTenderInput(v);
@@ -891,7 +892,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                     <TextInput
                       style={styles.tenderInput}
                       placeholder="hal. 9021837482"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor={colors.muted}
                       value={gcashRefInput}
                       onChangeText={(v) => {
                         setGcashRefInput(v);
@@ -956,7 +957,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                         <TextInput
                           style={styles.newCustomerInput}
                           placeholder="Bagong Suki (hal. Mang Jose)"
-                          placeholderTextColor="#9ca3af"
+                          placeholderTextColor={colors.muted}
                           value={newCustomerName}
                           onChangeText={setNewCustomerName}
                           editable={!creatingCustomer}
@@ -964,7 +965,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                         <TextInput
                           style={styles.newCustomerInput}
                           placeholder="Tala (hal. tapat ng tindahan)"
-                          placeholderTextColor="#9ca3af"
+                          placeholderTextColor={colors.muted}
                           value={newCustomerNote}
                           onChangeText={setNewCustomerNote}
                           editable={!creatingCustomer}
@@ -974,7 +975,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                         <TextInput
                           style={styles.newCustomerInput}
                           placeholder="Dating utang sa ₱ (opsyonal)"
-                          placeholderTextColor="#9ca3af"
+                          placeholderTextColor={colors.muted}
                           value={newCustomerOpeningDebt}
                           onChangeText={setNewCustomerOpeningDebt}
                           keyboardType="decimal-pad"
@@ -997,7 +998,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                       <TextInput
                         style={styles.tenderInput}
                         placeholder="hal. 0 kung walang bayad, o 20"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.muted}
                         value={partialPaidInput}
                         onChangeText={(v) => {
                           setPartialPaidInput(v);
@@ -1041,7 +1042,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
               <View style={styles.errorBox} accessibilityRole="alert">
                 <Text style={styles.errorText}>
                   Hindi makukumpleto ang benta: Kulang ang naitalang stock para sa{' '}
-                  {preview.insufficientStockItems.join(', ')}. Kailangan muna itong ayusin sa Pamahalaan.
+                  {preview.insufficientStockItems.join(', ')}. Kailangan muna itong ayusin sa Tindahan.
                 </Text>
               </View>
             )}
@@ -1059,7 +1060,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                 accessibilityLabel="Kumpirmahin at I-save ang Benta"
               >
                 {submitting ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text style={styles.confirmButtonText}>Kumpirmahin ang Cash Sale</Text>
                 )}
@@ -1079,7 +1080,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                 accessibilityLabel="Ihanda ang GCash Draft"
               >
                 {submitting ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text style={styles.confirmButtonText}>Ihanda ang GCash Draft (Pending)</Text>
                 )}
@@ -1107,7 +1108,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                 accessibilityLabel="Kumpirmahin ang Utang Sale"
               >
                 {submitting ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text style={styles.confirmButtonText}>Kumpirmahin ang Utang Sale</Text>
                 )}
@@ -1169,7 +1170,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                   <Text
                     style={[
                       styles.recentSaleAmount,
-                      sale.status === 'cancelled' && { color: '#94a3b8', textDecorationLine: 'line-through' },
+                      sale.status === 'cancelled' && { color: colors.disabled, textDecorationLine: 'line-through' },
                     ]}
                   >
                     ₱{formatCentavos(sale.totalCentavos)}
@@ -1202,7 +1203,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                       <TextInput
                         style={styles.cancelInput}
                         placeholder="Dahilan ng pagkansela (hal. nagbago ang isip)"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.muted}
                         value={cancelReasonInput}
                         onChangeText={setCancelReasonInput}
                         editable={!cancellingSale}
@@ -1225,7 +1226,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                           disabled={cancellingSale}
                         >
                           {cancellingSale ? (
-                            <ActivityIndicator size="small" color="#ffffff" />
+                            <ActivityIndicator size="small" color={colors.surface} />
                           ) : (
                             <Text style={styles.cancelConfirmBtnText}>Kumpirmahin ang Pagkansela</Text>
                           )}
@@ -1248,7 +1249,7 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
 
                   {sale.paymentMethod === 'gcash' && (
                     <TouchableOpacity
-                      style={{ backgroundColor: '#f0f9ff', borderColor: '#bae6fd', borderWidth: 1, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 6, alignItems: 'center' }}
+                      style={{ backgroundColor: colors.lilac, borderColor: colors.outline, borderWidth: 1, borderRadius: 6, minHeight: 48, paddingVertical: 8, paddingHorizontal: 10, marginTop: 6, alignItems: 'center', justifyContent: 'center' }}
                       onPress={() => {
                         setReceiptTarget({ kind: 'sale', id: sale.id, expectedAmountCentavos: sale.totalCentavos });
                         setReceiptModalVisible(true);
@@ -1256,8 +1257,8 @@ export function SellView({ db }: SellViewProps): React.JSX.Element {
                       accessibilityRole="button"
                       accessibilityLabel="Suriin o ilakip ang resibo ng benta"
                     >
-                      <Text style={{ fontSize: 12, color: '#0284c7', fontWeight: '600' }}>
-                        📄 Tingnan / Ilakip ang Resibo
+                      <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>
+                        Tingnan / Ilakip ang Resibo
                       </Text>
                     </TouchableOpacity>
                   )}

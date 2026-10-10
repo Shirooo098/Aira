@@ -1,3 +1,4 @@
+import { colors } from './theme.ts';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -142,25 +143,25 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={{ flexDirection: 'row', backgroundColor: '#e2e8f0', borderRadius: 8, padding: 3, marginBottom: 14 }}>
+      <View style={{ flexDirection: 'row', gap: 8, backgroundColor: colors.divider, borderRadius: 8, padding: 3, marginBottom: 14 }}>
         <TouchableOpacity
-          style={[{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 }, activeTab === 'products' && { backgroundColor: '#0284c7' }]}
+          style={[{ flex: 1, minHeight: 48, paddingVertical: 8, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 6 }, activeTab === 'products' && { backgroundColor: colors.primary }]}
           onPress={() => setActiveTab('products')}
           accessibilityRole="tab"
           accessibilityState={{ selected: true }}
         >
-          <Text style={[{ fontSize: 13, fontWeight: '700', color: '#475569' }, activeTab === 'products' && { color: '#ffffff' }]}>
-            📦 Mga Produkto
+          <Text style={[{ fontSize: 14, fontWeight: '700', color: colors.primaryMuted, textAlign: 'center' }, activeTab === 'products' && { color: colors.surface }]}>
+            Mga Produkto
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 }}
+          style={{ flex: 1, minHeight: 48, paddingVertical: 8, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}
           onPress={() => setActiveTab('reports')}
           accessibilityRole="tab"
           accessibilityState={{ selected: false }}
         >
-          <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
-            📊 Ulat ng Tindahan
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primaryMuted, textAlign: 'center' }}>
+            Ulat ng Tindahan
           </Text>
         </TouchableOpacity>
       </View>
@@ -174,15 +175,15 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
             accessibilityRole="button"
             accessibilityLabel="Idikta ang pagbabago sa paninda"
           >
-            <Text style={styles.saveButtonText}>🎙️ Idikta ang Paninda</Text>
+            <Text style={styles.saveButtonText}>Idikta ang Paninda</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.saveButton, { flex: 0, backgroundColor: '#0f766e', paddingHorizontal: 16 }]}
+            style={[styles.saveButton, { flex: 0, backgroundColor: colors.primary, paddingHorizontal: 16 }]}
             onPress={() => setNotebookModalOpen(true)}
             accessibilityRole="button"
             accessibilityLabel="I-scan ang notebook ng mga presyo"
           >
-            <Text style={styles.saveButtonText}>📓 I-scan ang Notebook</Text>
+            <Text style={styles.saveButtonText}>I-scan ang Notebook</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.saveButton, { flex: 0, backgroundColor: '#6d28d9', paddingHorizontal: 16 }]}
@@ -202,7 +203,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
         <TextInput
           style={styles.input}
           placeholder="hal. Coca-Cola, Safeguard, Bear Brand"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.muted}
           value={name}
           editable={!saving}
           onChangeText={(v) => {
@@ -217,7 +218,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
         <TextInput
           style={styles.input}
           placeholder="hal. 1.5L, Maliit, 60g, Regular"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.muted}
           value={variant}
           editable={!saving}
           onChangeText={(v) => {
@@ -232,7 +233,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
         <TextInput
           style={styles.input}
           placeholder="hal. piraso, bote, pack, sachet, lata"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.muted}
           value={unit}
           editable={!saving}
           onChangeText={(v) => {
@@ -247,7 +248,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
         <TextInput
           style={styles.input}
           placeholder="hal. 15.50, 75, 100.00"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.muted}
           value={priceInput}
           editable={!saving}
           onChangeText={(v) => {
@@ -318,7 +319,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
             accessibilityLabel="I-save ang produkto"
           >
             {saving ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={colors.surface} />
             ) : (
               <Text style={styles.saveButtonText}>Kumpirmahin at I-save</Text>
             )}
@@ -332,7 +333,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
         </Text>
 
         {loadingList ? (
-          <ActivityIndicator size="small" color="#0284c7" style={{ marginTop: 12 }} />
+          <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 12 }} />
         ) : listError ? (
           <View style={styles.errorBox} accessibilityRole="alert">
             <Text style={styles.errorText}>{listError}</Text>

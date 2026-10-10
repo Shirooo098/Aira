@@ -1,3 +1,4 @@
+import { colors, radii } from './theme.ts';
 import React, { useState } from 'react';
 import {
   Modal,
@@ -109,7 +110,7 @@ export function NotebookReviewModal({
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>📓 Pagsusuri ng Notebook OCR</Text>
+            <Text style={styles.title}>Pagsusuri ng Notebook OCR</Text>
             <Text style={styles.subtitle}>
               Suriin ang mga nakasulat na paninda at presyo bago i-save sa tindahan.
             </Text>
@@ -139,9 +140,9 @@ export function NotebookReviewModal({
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#ffffff" />
+                    <ActivityIndicator color={colors.surface} />
                   ) : (
-                    <Text style={styles.analyzeBtnText}>🔍 Suriin ang mga Paninda</Text>
+                    <Text style={styles.analyzeBtnText}>Suriin ang mga Paninda</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -151,7 +152,7 @@ export function NotebookReviewModal({
                   <Text style={styles.summaryText}>
                     Natagpuan: {proposals.length} produkto • {proposals.filter((p) => p.action === 'update_price').length} bawas/dagdag-presyo • {proposals.filter((p) => p.action === 'create_product').length} bagong paninda
                   </Text>
-                  <TouchableOpacity onPress={() => setAnalyzed(false)}>
+                  <TouchableOpacity style={styles.reEditButton} onPress={() => setAnalyzed(false)}>
                     <Text style={styles.reEditLink}>I-edit ang Teksto</Text>
                   </TouchableOpacity>
                 </View>
@@ -253,10 +254,10 @@ export function NotebookReviewModal({
                     disabled={hasUnresolved || saving}
                   >
                     {saving ? (
-                      <ActivityIndicator color="#ffffff" />
+                      <ActivityIndicator color={colors.surface} />
                     ) : (
                       <Text style={styles.applyBtnText}>
-                        💾 I-apply ang mga Pagbabago sa Tindahan
+                        I-apply ang mga Pagbabago sa Tindahan
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -273,14 +274,14 @@ export function NotebookReviewModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.backdrop,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   modalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
     maxHeight: '92%',
     width: '100%',
     padding: 18,
@@ -291,40 +292,42 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.primaryStrong,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.muted,
     marginBottom: 14,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#334155',
+    color: colors.text,
     marginBottom: 6,
   },
   multilineInput: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
+    borderColor: colors.outline,
+    borderRadius: radii.field,
     padding: 12,
     fontSize: 14,
-    color: '#1e293b',
+    color: colors.text,
     textAlignVertical: 'top',
     minHeight: 120,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
     marginBottom: 14,
   },
   analyzeBtn: {
-    backgroundColor: '#0284c7',
+    minHeight: 48,
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radii.button,
     alignItems: 'center',
   },
   analyzeBtnText: {
-    color: '#ffffff',
+    color: colors.surface,
     fontWeight: '700',
     fontSize: 14,
   },
@@ -332,28 +335,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceSoft,
     borderRadius: 8,
     padding: 10,
     marginBottom: 14,
   },
   summaryText: {
     fontSize: 12,
-    color: '#334155',
+    color: colors.text,
     fontWeight: '600',
     flex: 1,
   },
   reEditLink: {
-    fontSize: 12,
-    color: '#0284c7',
+    fontSize: 14,
+    color: colors.primary,
     fontWeight: '700',
     marginLeft: 8,
   },
+  reEditButton: {
+    minHeight: 48,
+    justifyContent: 'center',
+  },
   rowCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 8,
+    borderColor: colors.divider,
+    borderRadius: radii.card,
     padding: 12,
     marginBottom: 12,
   },
@@ -366,7 +373,7 @@ const styles = StyleSheet.create({
   rawLineText: {
     fontSize: 12,
     fontStyle: 'italic',
-    color: '#64748b',
+    color: colors.muted,
     flex: 1,
     marginRight: 8,
   },
@@ -380,55 +387,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   updateBadge: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#93c5fd',
+    backgroundColor: colors.lilac,
+    borderColor: colors.outline,
     borderWidth: 1,
   },
   updateBadgeText: {
-    color: '#1d4ed8',
+    color: colors.primary,
     fontSize: 11,
     fontWeight: '700',
   },
   newBadge: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#a7f3d0',
+    backgroundColor: colors.successSoft,
+    borderColor: colors.successOutline,
     borderWidth: 1,
   },
   newBadgeText: {
-    color: '#065f46',
+    color: colors.success,
     fontSize: 11,
     fontWeight: '700',
   },
   priceDiffBanner: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
     borderRadius: 6,
     padding: 8,
     marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#3b82f6',
+    borderLeftColor: colors.primary,
   },
   priceDiffText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1e40af',
+    color: colors.primary,
   },
   stockPreservedText: {
     fontSize: 11,
-    color: '#059669',
+    color: colors.success,
     marginTop: 2,
     fontWeight: '600',
   },
   clarificationBanner: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: colors.warningSoft,
     borderRadius: 6,
     padding: 8,
     marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#f59e0b',
+    borderLeftColor: colors.warningOutline,
   },
   clarificationText: {
     fontSize: 12,
-    color: '#92400e',
+    color: colors.warning,
   },
   fieldsGrid: {
     flexDirection: 'row',
@@ -441,59 +448,69 @@ const styles = StyleSheet.create({
   miniLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.primaryMuted,
     marginBottom: 2,
   },
   miniInput: {
+    minHeight: 48,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 6,
+    borderColor: colors.outline,
+    borderRadius: radii.field,
     paddingHorizontal: 8,
     paddingVertical: 4,
     fontSize: 13,
-    color: '#1e293b',
-    backgroundColor: '#ffffff',
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   errorBanner: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.errorSoft,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
+    borderLeftColor: colors.error,
   },
   errorText: {
     fontSize: 13,
-    color: '#b91c1c',
+    color: colors.error,
   },
   buttonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     gap: 10,
     marginTop: 14,
   },
   cancelBtn: {
+    maxWidth: '100%',
+    minHeight: 48,
+    justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    borderRadius: radii.button,
+    backgroundColor: colors.surfaceSoft,
   },
   cancelBtnText: {
-    color: '#475569',
+    textAlign: 'center',
+    color: colors.primaryMuted,
     fontWeight: '600',
     fontSize: 14,
   },
   applyBtn: {
+    maxWidth: '100%',
+    minHeight: 48,
+    justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 18,
-    borderRadius: 8,
-    backgroundColor: '#059669',
+    borderRadius: radii.button,
+    backgroundColor: colors.success,
   },
   applyBtnDisabled: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: colors.disabled,
   },
   applyBtnText: {
-    color: '#ffffff',
+    textAlign: 'center',
+    color: colors.surface,
     fontWeight: '700',
     fontSize: 14,
   },

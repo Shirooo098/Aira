@@ -1,3 +1,4 @@
+import { colors } from './theme.ts';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
@@ -341,7 +342,7 @@ export function RepaymentModal({
                   <TextInput
                     style={styles.input}
                     placeholder="hal. 50, 100, 250"
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.muted}
                     value={amountInput}
                     onChangeText={(val) => {
                       setAmountInput(val);
@@ -416,7 +417,7 @@ export function RepaymentModal({
                     <TextInput
                       style={styles.input}
                       placeholder="hal. 9021837482"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.muted}
                       value={gcashRef}
                       onChangeText={setGcashRef}
                       editable={!submitting}
@@ -431,7 +432,7 @@ export function RepaymentModal({
                   <TextInput
                     style={styles.input}
                     placeholder="hal. Paunang bayad mula sa suweldo"
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.muted}
                     value={note}
                     onChangeText={setNote}
                     editable={!submitting}
@@ -467,7 +468,7 @@ export function RepaymentModal({
 
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>Bagong Natitirang Utang:</Text>
-                      <Text style={[styles.previewValue, { color: '#b91c1c' }]}>
+                      <Text style={[styles.previewValue, { color: colors.error }]}>
                         ₱{formatCentavos(preview.newTotalDebtCentavos)}
                       </Text>
                     </View>
@@ -535,7 +536,7 @@ export function RepaymentModal({
                     accessibilityLabel="Kumpirmahin ang bayad sa utang"
                   >
                     {submitting ? (
-                      <ActivityIndicator color="#ffffff" size="small" />
+                      <ActivityIndicator color={colors.surface} size="small" />
                     ) : (
                       <Text style={styles.confirmBtnText}>Kumpirmahin ang Bayad</Text>
                     )}
@@ -546,7 +547,7 @@ export function RepaymentModal({
               /* History Tab */
               <View>
                 {loadingLedger ? (
-                  <ActivityIndicator size="small" color="#0284c7" style={{ marginVertical: 20 }} />
+                  <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
                 ) : (
                   <>
                     {/* Active & Past Credit Entries */}
@@ -605,7 +606,7 @@ export function RepaymentModal({
                                   style={[
                                     styles.historyAmount,
                                     {
-                                      color: rep.status === 'reversed' ? '#94a3b8' : '#059669',
+                                      color: rep.status === 'reversed' ? colors.disabled : colors.success,
                                       textDecorationLine: rep.status === 'reversed' ? 'line-through' : 'none',
                                     },
                                   ]}
@@ -636,7 +637,7 @@ export function RepaymentModal({
                                     <TextInput
                                       style={styles.reversalInput}
                                       placeholder="Dahilan ng pag-reverse (hal. maling encode)"
-                                      placeholderTextColor="#9ca3af"
+                                      placeholderTextColor={colors.muted}
                                       value={reversalReasonInput}
                                       onChangeText={setReversalReasonInput}
                                       editable={!reversing}
@@ -659,7 +660,7 @@ export function RepaymentModal({
                                         disabled={reversing}
                                       >
                                         {reversing ? (
-                                          <ActivityIndicator size="small" color="#ffffff" />
+                                          <ActivityIndicator size="small" color={colors.surface} />
                                         ) : (
                                           <Text style={styles.reversalConfirmBtnText}>Kumpirmahin ang Reversal</Text>
                                         )}

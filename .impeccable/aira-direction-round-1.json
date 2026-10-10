@@ -1,0 +1,226 @@
+{
+  "title": "Aira: choose a price-lookup theme",
+  "question": "Fresh directions with different screen structures. These are sample mockups for evaluation before coding.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Market Basket",
+      "kicker": "THE ROLL",
+      "lineage": "Open market baskets and ordered item rows",
+      "thesis": "An open green working area makes capture easy and the result easy to scan.",
+      "palette": [
+        "#C9E8D2",
+        "#183E30",
+        "#FCFBF5",
+        "#C77B61"
+      ],
+      "materials": [
+        "flat mint capture area",
+        "warm white item rows"
+      ],
+      "viewport": "Speech and search in the upper green field; product at left and price at right in an open row below.",
+      "risk": "Long product names need room beside the price.",
+      "comp": ".impeccable/mocks/decision/market-basket.png",
+      "raised": [
+        {
+          "from": "Datamatics",
+          "raise": "Preserve sharp contrast between the answer and its quiet labels."
+        },
+        {
+          "from": "Dense Japanese modules",
+          "raise": "Show only information needed for this task."
+        },
+        {
+          "from": "Slide rack",
+          "raise": "Maintain stable alignment while product names wrap."
+        },
+        {
+          "from": "Ticket wallet",
+          "raise": "Keep pending and confirmed record states visible on future transaction screens."
+        },
+        {
+          "from": "Factory catalog",
+          "raise": "Make the active mode unmistakable without replacing words with codes."
+        }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Pocket Price Reader",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "The handheld calculator on a store counter",
+      "thesis": "A simple answer display brings the price into focus before the next lookup.",
+      "palette": [
+        "#F8F6EF",
+        "#272D29",
+        "#C5D884",
+        "#F0CB6D"
+      ],
+      "materials": [
+        "graphite answer display",
+        "soft lime action keys"
+      ],
+      "viewport": "A dark answer display on a warm light shell, with search and speech below.",
+      "risk": "The calculator association is familiar; the design must not imply that Aira invents prices.",
+      "comp": ".impeccable/mocks/decision/pocket-price-reader.png"
+    },
+    {
+      "id": "challenger-index",
+      "label": "Paninda Index",
+      "verdict": "competitive",
+      "lineage": "Tabbed reference manuals and notebook dividers",
+      "thesis": "A personal paninda index replaces stacked cards with one clearly marked page.",
+      "palette": [
+        "#FEFCF7",
+        "#225BC1",
+        "#F6D36B",
+        "#18324B"
+      ],
+      "materials": [
+        "cobalt divider",
+        "warm yellow active marker"
+      ],
+      "viewport": "A tabbed top mode rail, open product details, and an aligned price with a margin marker.",
+      "case": "Good cultural identification with store notebooks; slightly less immediate capture than the basket.",
+      "risk": "Top tabs must stay readable and tappable on a small phone.",
+      "comp": ".impeccable/mocks/decision/paninda-index.png",
+      "board": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board.webp",
+      "hero": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board-hero.webp"
+    },
+    {
+      "id": "declined-data",
+      "label": "Data Field",
+      "verdict": "declined",
+      "lineage": "Data Field",
+      "palette": [
+        "#000000",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "flat structured panels"
+      ],
+      "thesis": "Product and price pulled into focus from a data field.",
+      "viewport": "A high-contrast numerical answer dominates a barcode-like field.",
+      "risk": "Strobing and dense encoded data conflict with warm, immediate phone lookup.",
+      "kept": "Sharp answer contrast.",
+      "case": "Declined on audience identification and lookup clarity.",
+      "board": "https://impeccable.style/worlds/cards/ikeda-datamatics.webp",
+      "hero": "https://impeccable.style/worlds/cards/ikeda-datamatics-hero.webp"
+    },
+    {
+      "id": "declined-density",
+      "label": "Dense Module Grid",
+      "verdict": "declined",
+      "lineage": "Dense Module Grid",
+      "palette": [
+        "#FFFFFF",
+        "#171717",
+        "#C53030"
+      ],
+      "materials": [
+        "flat structured panels"
+      ],
+      "thesis": "Lookup, catalog, and prices share a compact module grid.",
+      "viewport": "Multiple tightly packed catalog modules fill the first viewport.",
+      "risk": "Tiny modules and multiple navigation layers obscure the one lookup task.",
+      "kept": "Keep only task-relevant information.",
+      "case": "Declined on audience identification and lookup clarity.",
+      "board": "https://impeccable.style/worlds/cards/japanese-high-density-web.webp",
+      "hero": "https://impeccable.style/worlds/cards/japanese-high-density-web-hero.webp"
+    },
+    {
+      "id": "declined-rack",
+      "label": "Slide Rack",
+      "verdict": "declined",
+      "lineage": "Slide Rack",
+      "palette": [
+        "#C99D36",
+        "#384553",
+        "#F4EEE0",
+        "#7F2F27"
+      ],
+      "materials": [
+        "flat structured panels"
+      ],
+      "thesis": "Product facts move as one aligned rack of slides.",
+      "viewport": "A lateral product rack keeps prices aligned with variants.",
+      "risk": "Raked panels and lateral travel complicate an everyday single answer.",
+      "kept": "Stable alignment across wrapped content.",
+      "case": "Declined on audience identification and lookup clarity.",
+      "board": "https://impeccable.style/worlds/cards/rw-timetable-slide-rack.webp",
+      "hero": "https://impeccable.style/worlds/cards/rw-timetable-slide-rack-hero.webp"
+    },
+    {
+      "id": "declined-wallet",
+      "label": "Coupon Wallet",
+      "verdict": "declined",
+      "lineage": "Coupon Wallet",
+      "palette": [
+        "#142D4D",
+        "#B93232",
+        "#FFFFFF",
+        "#5E3B73"
+      ],
+      "materials": [
+        "flat structured panels"
+      ],
+      "thesis": "Lookup and sale become sequential coupons.",
+      "viewport": "A coupon stack distinguishes a proposed answer from a recorded transaction.",
+      "risk": "A sequential journey adds unnecessary interpretation to simple lookup.",
+      "kept": "Persistent draft and confirmed states.",
+      "case": "Declined on audience identification and lookup clarity.",
+      "board": "https://impeccable.style/worlds/cards/vernacular-ephemera-jet-age-ticket-wallet.webp",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-jet-age-ticket-wallet-hero.webp"
+    },
+    {
+      "id": "declined-factory",
+      "label": "Coded Catalog",
+      "verdict": "declined",
+      "lineage": "Coded Catalog",
+      "palette": [
+        "#111111",
+        "#FFFFFF",
+        "#5AAE84"
+      ],
+      "materials": [
+        "flat structured panels"
+      ],
+      "thesis": "Every product becomes a coded catalog entry.",
+      "viewport": "A decoded selected product emerges from a dark coded index.",
+      "risk": "Replacing product words with codes fails fast, familiar price lookup.",
+      "kept": "Unmistakable active-mode emphasis.",
+      "case": "Declined on audience identification and lookup clarity.",
+      "board": "https://impeccable.style/worlds/cards/brand-identity-canon-saville-catalog-sleeve.webp",
+      "hero": "https://impeccable.style/worlds/cards/brand-identity-canon-saville-catalog-sleeve-hero.webp"
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "steer": true,
+  "canon": true,
+  "canonCard": {
+    "label": "Familiar Android",
+    "thesis": "A familiar Material-style lookup screen with careful spacing and a single strong action.",
+    "palette": [
+      "#FFFBFE",
+      "#3E516F",
+      "#DCE5F4",
+      "#1B1B1F"
+    ],
+    "materials": [
+      "tonal surfaces",
+      "native rounded controls"
+    ],
+    "viewport": "Standard top app bar, search field, answer card, speech action, and a three-destination navigation bar.",
+    "risk": "Easy to learn, but less distinct as Aira’s own theme.",
+    "comp": ".impeccable/mocks/decision/familiar-android.png"
+  },
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-10T00:52:50.386Z",
+  "title": "Design System: Aira — Friendly Price Board",
+  "extensions": {
+    "reference": ".impeccable/mocks/decision/friendly-price-board-approved.png",
+    "status": "implemented-source-verified-native-acceptance-pending",
+    "baseline": "docs/UI-BASELINE.design.json",
+    "runtimeSource": "src/ui/theme.ts",
+    "nativeUnits": "Frontmatter px serializes density-independent layout and scalable native text units.",
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Ink Purple"
+      },
+      "accent": {
+        "role": "secondary",
+        "displayName": "Apricot"
+      },
+      "lilac": {
+        "role": "secondary",
+        "displayName": "Lilac Answer"
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Near-white Ground"
+      },
+      "success": {
+        "role": "feedback",
+        "displayName": "Success Green"
+      },
+      "warning": {
+        "role": "feedback",
+        "displayName": "Warning Amber"
+      },
+      "error": {
+        "role": "feedback",
+        "displayName": "Error Red"
+      }
+    },
+    "typographyMeta": {
+      "lookup-title": {
+        "displayName": "Price Question",
+        "purpose": "Conversational price-lookup heading."
+      },
+      "lookup-product": {
+        "displayName": "Product Identity",
+        "purpose": "Actual product name, allowed to wrap."
+      },
+      "lookup-price": {
+        "displayName": "Price Answer",
+        "purpose": "Formatted integer-centavo catalog price."
+      }
+    },
+    "motion": [
+      {
+        "name": "mode-press",
+        "value": "activeOpacity 0.7",
+        "purpose": "Existing native press feedback."
+      },
+      {
+        "name": "native-modal",
+        "value": "Modal slide/fade",
+        "purpose": "Existing platform transition; no custom duration."
+      }
+    ],
+    "breakpoints": [],
+    "verification": {
+      "focusedTests": 25,
+      "typecheck": "passed",
+      "androidBundleExport": "passed",
+      "speechPresenterContract": "passed",
+      "independentSourceReview": "no material introduced findings",
+      "nativeCapture": "unavailable; no adb target/emulator",
+      "visualBuildGate": "hero open pending native capture",
+      "diffHash": "85b79eac50f455d789bb9c67d05af6a676fe27a4"
+    }
+  },
+  "components": [
+    {
+      "name": "Speech action",
+      "kind": "button",
+      "refersTo": "speech-action",
+      "description": "Illustrative CSS translation of native source. Hover/focus are documentation controls, not verified app states. Example data is synthetic.",
+      "html": "<button class=\"ds-speech\">Magsalita — hawakan</button>",
+      "css": ".ds-speech{min-height:56px;padding:12px 20px;border:0;border-radius:18px;background:#ffb974;color:#402668;font:700 16px system-ui;cursor:pointer}.ds-speech:active{opacity:.7}.ds-speech:disabled{opacity:.55}.ds-speech:focus-visible{outline:2px solid #402668;outline-offset:3px}"
+    },
+    {
+      "name": "Product search",
+      "kind": "input",
+      "refersTo": "lookup-search",
+      "description": "Illustrative CSS translation of native source. Hover/focus are documentation controls, not verified app states. Example data is synthetic.",
+      "html": "<label class=\"ds-search-label\">Paninda<input class=\"ds-search\" placeholder=\"Hanapin ang paninda\"></label>",
+      "css": ".ds-search-label{display:grid;gap:6px;color:#402668;font:600 15px system-ui}.ds-search{box-sizing:border-box;width:100%;min-height:56px;padding:8px 16px;border:1.5px solid #d6c7e4;border-radius:28px;background:#ffffff;color:#32263f;font:16px system-ui}.ds-search::placeholder{color:#736780}.ds-search:focus-visible{outline:2px solid #402668;outline-offset:3px}"
+    },
+    {
+      "name": "Correction link",
+      "kind": "button",
+      "description": "Illustrative CSS translation of native source. Hover/focus are documentation controls, not verified app states. Example data is synthetic.",
+      "html": "<button class=\"ds-edit\">I-edit ang hinahanap</button>",
+      "css": ".ds-edit{min-height:48px;padding:10px 8px;border:0;background:transparent;color:#402668;font:700 15px system-ui;cursor:pointer}.ds-edit:active{opacity:.7}.ds-edit:focus-visible{outline:2px solid #402668;outline-offset:3px}"
+    },
+    {
+      "name": "Lookup answer",
+      "kind": "custom",
+      "refersTo": "lookup-result",
+      "description": "Illustrative CSS translation of native source. Hover/focus are documentation controls, not verified app states. Example data is synthetic.",
+      "html": "<article class=\"ds-answer\"><span class=\"ds-marker\" aria-hidden=\"true\"></span><strong>Lucky Me Pancit Canton</strong><p>Chilimansi · 60 g · pakete</p><b>₱15.00</b><span class=\"ds-found\">Nahanap sa paninda</span><footer>Suriin ang variant at laki.</footer></article>",
+      "css": ".ds-answer{background:#f3edff;border-radius:26px;padding:22px;font-family:system-ui;overflow-wrap:anywhere}.ds-marker{display:block;width:36px;height:4px;border-radius:2px;background:#d6c7e4;margin-bottom:16px}.ds-answer strong{display:block;color:#402668;font:900 36px/42px system-ui}.ds-answer p{color:#6b587f;font:600 16px system-ui;margin:6px 0 0}.ds-answer b{display:block;margin-top:10px;color:#402668;font:900 58px system-ui;letter-spacing:-1px}.ds-found{display:inline-block;max-width:100%;box-sizing:border-box;margin-top:16px;padding:6px 12px;background:#ffb974;color:#40235f;border-radius:16px;font:700 14px system-ui}.ds-answer footer{margin-top:18px;padding-top:14px;border-top:1px solid #d6c7e4;color:#6b587f;font:500 15px system-ui}"
+    },
+    {
+      "name": "Bottom navigation",
+      "kind": "nav",
+      "description": "Illustrative CSS translation of native source. Hover/focus are documentation controls, not verified app states. Example data is synthetic. Native icon geometry is omitted from this text specimen.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Mga mode\"><button class=\"ds-tab ds-current\" aria-current=\"page\">Presyo</button><button class=\"ds-tab\">Benta</button><button class=\"ds-tab\">Tindahan</button></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:8px;min-height:72px;padding:8px 12px;background:#ffffff;border-top:1px solid #e8dff0;box-sizing:border-box}.ds-tab{flex:1;min-height:48px;min-width:48px;border:0;background:transparent;color:#736780;font:500 12px system-ui;cursor:pointer}.ds-current{border-radius:16px;background:#e9ddff;color:#402668;font-weight:700}.ds-tab:active{opacity:.7}.ds-tab:focus-visible{outline:2px solid #402668;outline-offset:3px}"
+    },
+    {
+      "name": "Unknown product",
+      "kind": "card",
+      "description": "Illustrative CSS translation of native source. Hover/focus are documentation controls, not verified app states. Example data is synthetic.",
+      "html": "<article class=\"ds-unknown\"><strong>Hindi nakita ang paninda</strong><p>Suriin ang pangalan o pumunta sa Tindahan.</p></article>",
+      "css": ".ds-unknown{padding:20px;border:1.5px solid #e8bd8b;border-radius:24px;background:#fff2df;font:15px system-ui;color:#32263f}.ds-unknown strong{color:#85441d;font:800 18px system-ui}.ds-unknown p{margin:6px 0 0}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Helpful Companion",
+    "overview": "Warm Filipino-first price lookup, purple typography, lilac answers, and apricot speech actions. Shared native theme extends through existing store workflows. Persistent top Offline badge removed. Source checks passed; native rendering remains unverified.",
+    "keyCharacteristics": [
+      "Purple, lilac, and apricot identity",
+      "Bold product and price hierarchy",
+      "Rounded native controls",
+      "Visible capture, correction, and owner review"
+    ],
+    "rules": [
+      {
+        "name": "Answer First",
+        "body": "Keep product, variant, unit, and price readable together; wrap real content.",
+        "section": "typography"
+      },
+      {
+        "name": "State Clarity",
+        "body": "Pair colors with state text and selected accessibility state; preserve uncertainty and recovery.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Use shared runtime roles.",
+      "Preserve speech correction and owner confirmation.",
+      "Verify native rendering and accessibility on Android."
+    ],
+    "donts": [
+      "Don't restore the redundant top Offline badge.",
+      "Don't insert mockup products into persistence.",
+      "Don't treat previews or bundle export as native visual verification."
+    ]
+  }
+}

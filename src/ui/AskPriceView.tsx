@@ -1,17 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 import type { DatabaseSession } from '../db/database.ts';
 import type { Product } from '../types.ts';
 import { createLookupSession, type LookupState } from '../actions/lookup-session.ts';
 import { formatCentavos } from '../domain/money.ts';
 import { parsePriceCommand } from '../domain/price-command.ts';
+import { AppIcon } from './AppIcon.tsx';
+import { colors } from './theme.ts';
 import { askPriceStyles as styles } from './ask-price-styles.ts';
 import { SpeechTranscriptInput } from './SpeechTranscriptInput.tsx';
 
@@ -31,6 +33,7 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
   });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const querySource = useRef<QuerySource>(null);
+  const searchInputRef = useRef<TextInput>(null);
 
   const lookup = useMemo(() => createLookupSession(db, setLookup), [db]);
   useEffect(() => () => lookup.cancel(), [lookup]);
@@ -90,14 +93,57 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Alamin ang Presyo</Text>
-        <Text style={styles.subtitle}>I-type ang pangalan o suriin muna ang tanong sa boses</Text>
+        <Text style={styles.title}>Magkano ito?</Text>
+        <Text style={styles.subtitle}>Hanapin ang presyo ng paninda sa tindahan mo.</Text>
       </View>
 
+      {/* Rounded search with search/clear icons BEFORE speech */}
+      <View style={styles.searchRow}>
+        <AppIcon name="search" size={20} color={colors.primaryMuted} />
+        <TextInput
+          ref={searchInputRef}
+          style={styles.searchInput}
+          placeholder="hal. Coke, Bear Brand, Lucky Me"
+          placeholderTextColor={colors.muted}
+          value={query}
+          onChangeText={handleSearch}
+          accessibilityLabel="Pangalan ng paninda na hahanapin"
+          returnKeyType="search"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {query.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClear}
+            accessibilityLabel="Burahin ang nilalaman"
+            accessibilityRole="button"
+          >
+            <View style={styles.clearButtonIcon}>
+              <AppIcon name="close" size={14} color={colors.muted} />
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Apricot primary speech control */}
       <SpeechTranscriptInput
+        compact={true}
         onReviewedTranscript={handleReviewedTranscript}
         onTranscriptInvalidated={handleVoiceInvalidated}
       />
+
+      {/* Purple correction link that focuses search input */}
+      <TouchableOpacity
+        style={styles.correctionLink}
+        onPress={() => searchInputRef.current?.focus()}
+        accessibilityRole="button"
+        accessibilityLabel="I-edit ang hinahanap"
+        activeOpacity={0.7}
+      >
+        <AppIcon name="edit" size={18} color={colors.primary} />
+        <Text style={styles.correctionText}>I-edit ang hinahanap</Text>
+      </TouchableOpacity>
 
       {reviewedQuestion !== null && (
         <View style={styles.voiceReviewContainer}>
@@ -118,57 +164,39 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
       )}
 
       {error && (
-        <View accessibilityRole="alert">
-          <Text>{error}</Text>
-          <TouchableOpacity style={styles.clearButton} accessibilityRole="button" onPress={handleRetrySearch}>
-            <Text>Subukan muli</Text>
+        <View style={styles.errorCard} accessibilityRole="alert">
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} accessibilityRole="button" onPress={handleRetrySearch}>
+            <Text style={styles.retryButtonText}>Subukan muli</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="hal. Coke, Bear Brand, Lucky Me"
-          placeholderTextColor="#9ca3af"
-          value={query}
-          onChangeText={handleSearch}
-          accessibilityLabel="Pangalan ng produkto na hahanapin"
-          returnKeyType="search"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {query.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClear}
-            accessibilityLabel="Burahin ang nilalaman"
-            accessibilityRole="button"
-          >
-            <Text style={styles.clearButtonText}>Burahin</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
       {loading && (
         <View style={styles.centered} accessibilityLabel="Naghahanap">
-          <ActivityIndicator size="large" color="#0284c7" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.helperText}>Naghahanap sa catalog...</Text>
         </View>
       )}
 
       {!loading && displayProduct && (
         <View style={styles.cardSuccess} accessibilityLabel="Resulta ng presyo">
-          <Text style={styles.productBadge}>Nahanap na Produkto</Text>
+          <View style={styles.resultHandle} />
           <Text style={styles.productName}>{displayProduct.name}</Text>
           <Text style={styles.productMeta}>
-            {displayProduct.variant} • bawat {displayProduct.unit}
+            {displayProduct.variant ? `${displayProduct.variant} • ` : ''}bawat {displayProduct.unit}
           </Text>
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>Presyo:</Text>
-            <Text style={styles.priceValue}>
-              {formatCentavos(displayProduct.priceCentavos)}
-            </Text>
+          <Text style={styles.priceValue}>
+            {formatCentavos(displayProduct.priceCentavos)}
+          </Text>
+          <View style={styles.foundBadge}>
+            <AppIcon name="tag" size={16} color={colors.primary} />
+            <Text style={styles.foundBadgeText}>Nahanap sa paninda</Text>
+          </View>
+          <View style={styles.resultDivider} />
+          <View style={styles.reminderRow}>
+            <AppIcon name="info" size={20} color={colors.primary} />
+            <Text style={styles.reminderText}>Suriin ang variant at laki.</Text>
           </View>
         </View>
       )}
@@ -204,7 +232,7 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
             Walang naitalang presyo para sa &quot;{result.query}&quot;.
           </Text>
           <Text style={styles.unknownHint}>
-            Hindi kami nanghuhula ng presyo. Maaari mong idagdag ang produktong ito sa tab na &quot;Pamahalaan&quot;.
+            Hindi kami nanghuhula ng presyo. Maaari mong idagdag ang produktong ito sa tab na &quot;Tindahan&quot;.
           </Text>
         </View>
       )}
@@ -212,7 +240,7 @@ export function AskPriceView({ db }: AskPriceViewProps): React.JSX.Element {
       {!loading && !error && voiceCommandError === null && result.kind === 'empty' && (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            I-type ang pangalan ng paninda sa itaas upang masilip ang opisyal na presyo.
+            I-type ang pangalan ng paninda sa itaas o gamitin ang boses upang alamin ang opisyal na presyo.
           </Text>
         </View>
       )}
