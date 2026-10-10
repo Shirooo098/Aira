@@ -185,6 +185,10 @@ test('CRITICAL: approving a restock checklist does NOT alter inventory or execut
   assert.ok(approved.approvedAt);
   assert.equal(approved.notes, 'Approved during morning inventory review');
 
+  // Verify item decision transition
+  const biscuitItem = approved.items.find((i) => i.productId === biscuit.id);
+  assert.equal(biscuitItem?.decision, 'approved');
+
   // Verify stock is STILL 0 - NOT modified!
   const stockAfter = await getStockLevel(db, biscuit.id);
   assert.equal(stockAfter?.quantity, 0);

@@ -272,20 +272,21 @@ const MIGRATIONS: Migration[] = [
         CREATE TABLE IF NOT EXISTS restock_checklist_items (
           id TEXT PRIMARY KEY NOT NULL,
           checklist_id TEXT NOT NULL REFERENCES restock_checklists(id) ON DELETE CASCADE,
-          product_id TEXT NOT NULL REFERENCES products(id),
+          product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
           product_name TEXT NOT NULL,
           product_variant TEXT NOT NULL,
           product_unit TEXT NOT NULL,
-          current_stock INTEGER,
-          units_sold INTEGER NOT NULL CHECK (units_sold >= 0),
+          current_stock INTEGER CHECK (current_stock IS NULL OR (typeof(current_stock) = 'integer' AND current_stock >= 0)),
+          units_sold INTEGER NOT NULL CHECK (typeof(units_sold) = 'integer' AND units_sold >= 0),
           suggested_quantity INTEGER CHECK (suggested_quantity IS NULL OR (typeof(suggested_quantity) = 'integer' AND suggested_quantity > 0)),
-          requested_quantity INTEGER NOT NULL CHECK (typeof(requested_quantity) = 'integer' AND requested_quantity > 0),
+          requested_quantity INTEGER CHECK (requested_quantity IS NULL OR (typeof(requested_quantity) = 'integer' AND requested_quantity > 0)),
           has_sufficient_history INTEGER NOT NULL CHECK (has_sufficient_history IN (0, 1)),
-          reason TEXT NOT NULL,
+          reason TEXT NOT NULL CHECK (reason IN ('out_of_stock', 'low_stock', 'popular_demand', 'manual')),
           reason_explanation TEXT NOT NULL,
           history_explanation TEXT NOT NULL,
           is_included INTEGER NOT NULL CHECK (is_included IN (0, 1)),
           is_priority INTEGER NOT NULL DEFAULT 0 CHECK (is_priority IN (0, 1)),
+          decision TEXT NOT NULL DEFAULT 'pending' CHECK (decision IN ('pending', 'approved', 'rejected')),
           created_at TEXT NOT NULL
         );
 

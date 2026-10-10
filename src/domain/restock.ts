@@ -9,6 +9,8 @@ export type RestockReason =
   | 'popular_demand'
   | 'manual';
 
+export type RestockDecision = 'pending' | 'approved' | 'rejected';
+
 export interface RestockChecklistItemDraft {
   productId: string;
   productName: string;
@@ -21,15 +23,17 @@ export interface RestockChecklistItemDraft {
   reason: RestockReason;
   reasonExplanation: string;
   suggestedQuantity: number | null;
-  requestedQuantity: number;
+  requestedQuantity: number | null;
   isIncluded: boolean;
   isPriority?: boolean;
+  decision?: RestockDecision;
 }
 
 export interface RestockChecklistItem extends RestockChecklistItemDraft {
   id: string;
   checklistId: string;
   createdAt: string;
+  decision: RestockDecision;
 }
 
 export type RestockChecklistStatus = 'draft' | 'approved' | 'discarded';
@@ -169,16 +173,17 @@ export function generateRestockSuggestions(input: RestockCandidateInput): Restoc
       requestedQuantity: suggestedQuantity ?? 1,
       isIncluded: true,
       isPriority: false,
+      decision: 'pending',
     });
   }
 
-  // Stable ordering: out_of_stock > low_stock > popular_demand > uncounted
+  // Stable ordering: out_of_stock > low_stock > popular_demand > manual > uncounted
   const reasonRank: Record<RestockReason, number> = {
     out_of_stock: 0,
     low_stock: 1,
     popular_demand: 2,
-    uncounted: 3,
-    manual: 4,
+    manual: 3,
+    uncounted: 4,
   };
 
   drafts.sort((a, b) => {

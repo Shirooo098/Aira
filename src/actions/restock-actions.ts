@@ -8,6 +8,7 @@ import {
   type RestockChecklist,
   type RestockChecklistItem,
   type RestockChecklistStatus,
+  type RestockDecision,
   type RestockReason,
 } from '../domain/restock.ts';
 
@@ -33,13 +34,14 @@ interface ChecklistItemRow {
   current_stock: number | null;
   units_sold: number;
   suggested_quantity: number | null;
-  requested_quantity: number;
+  requested_quantity: number | null;
   has_sufficient_history: number;
   reason: RestockReason;
   reason_explanation: string;
   history_explanation: string;
   is_included: number;
   is_priority: number;
+  decision: RestockDecision;
   created_at: string;
 }
 
@@ -54,16 +56,18 @@ interface StockRow {
   quantity: number | null;
 }
 
-function generateChecklistId(): string {
+function generateId(prefix: string): string {
   const timestamp = Date.now().toString(36);
   const randomPart = Math.random().toString(36).substring(2, 9);
-  return `chk_${timestamp}_${randomPart}`;
+  return `${prefix}_${timestamp}_${randomPart}`;
+}
+
+function generateChecklistId(): string {
+  return generateId('chk');
 }
 
 function generateItemId(): string {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 9);
-  return `it_chk_${timestamp}_${randomPart}`;
+  return generateId('it_chk');
 }
 
 function mapItemRow(row: ChecklistItemRow): RestockChecklistItem {
@@ -84,6 +88,7 @@ function mapItemRow(row: ChecklistItemRow): RestockChecklistItem {
     historyExplanation: row.history_explanation,
     isIncluded: row.is_included === 1,
     isPriority: row.is_priority === 1,
+    decision: row.decision ?? 'pending',
     createdAt: row.created_at,
   };
 }
@@ -124,8 +129,8 @@ export async function createDraftRestockChecklist(
           id, checklist_id, product_id, product_name, product_variant, product_unit,
           current_stock, units_sold, suggested_quantity, requested_quantity,
           has_sufficient_history, reason, reason_explanation, history_explanation,
-          is_included, is_priority, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          is_included, is_priority, decision, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?);`,
         [
           itemId,
           checklistId,
@@ -151,6 +156,7 @@ export async function createDraftRestockChecklist(
         ...draft,
         id: itemId,
         checklistId,
+        decision: 'pending',
         createdAt: now,
       });
     }
@@ -237,11 +243,16 @@ export async function updateChecklistItem(
 
   let nextRequestedQuantity = existing.requested_quantity;
   if (params.requestedQuantity !== undefined) {
-    nextRequestedQuantity = validateChecklistQuantity(params.requestedQuantity);
+    nextRequestedQuantity = params.requestedQuantity === null ? null : validateChecklistQuantity(params.requestedQuantity);
   }
 
   const nextIsIncluded = params.isIncluded !== undefined ? (params.isIncluded ? 1 : 0) : existing.is_included;
   const nextIsPriority = params.isPriority !== undefined ? (params.isPriority ? 1 : 0) : existing.is_priority;
+
+  // If newly included and quantity was null, default to 1 so there is an explicit quantity
+  if (nextIsIncluded === 1 && nextRequestedQuantity === null) {
+    nextRequestedQuantity = 1;
+  }
 
   await db.run(
     `UPDATE restock_checklist_items
@@ -300,8 +311,8 @@ export async function addChecklistItem(
       id, checklist_id, product_id, product_name, product_variant, product_unit,
       current_stock, units_sold, suggested_quantity, requested_quantity,
       has_sufficient_history, reason, reason_explanation, history_explanation,
-      is_included, is_priority, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, 0, 'manual', 'Manu-manong idinagdag ng may-ari sa checklist.', 'Manu-manong idinagdag.', 1, 0, ?);`,
+      is_included, is_priority, decision, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, 0, 'manual', 'Manu-manong idinagdag ng may-ari sa checklist.', 'Manu-manong idinagdag.', 1, 0, 'pending', ?);`,
     [
       itemId,
       params.checklistId,
@@ -352,12 +363,30 @@ export async function approveRestockChecklist(
   const now = new Date().toISOString();
   const notes = params.notes !== undefined ? params.notes : existing.notes;
 
-  await db.run(
-    `UPDATE restock_checklists
-     SET status = 'approved', approved_at = ?, notes = ?
-     WHERE id = ?;`,
-    [now, notes, params.checklistId]
-  );
+  await db.exec('BEGIN IMMEDIATE;');
+  try {
+    await db.run(
+      `UPDATE restock_checklists
+       SET status = 'approved', approved_at = ?, notes = ?
+       WHERE id = ?;`,
+      [now, notes, params.checklistId]
+    );
+
+    await db.run(
+      `UPDATE restock_checklist_items
+       SET decision = CASE
+         WHEN is_included = 1 AND requested_quantity IS NOT NULL AND requested_quantity > 0 THEN 'approved'
+         ELSE 'rejected'
+       END
+       WHERE checklist_id = ?;`,
+      [params.checklistId]
+    );
+
+    await db.exec('COMMIT;');
+  } catch (err) {
+    await db.exec('ROLLBACK;');
+    throw err;
+  }
 
   return getRestockChecklist(db, params.checklistId);
 }
@@ -374,12 +403,27 @@ export async function discardRestockChecklist(
   const existing = await getRestockChecklist(db, params.checklistId);
   const now = new Date().toISOString();
 
-  await db.run(
-    `UPDATE restock_checklists
-     SET status = 'discarded', discarded_at = ?
-     WHERE id = ?;`,
-    [now, params.checklistId]
-  );
+  await db.exec('BEGIN IMMEDIATE;');
+  try {
+    await db.run(
+      `UPDATE restock_checklists
+       SET status = 'discarded', discarded_at = ?
+       WHERE id = ?;`,
+      [now, params.checklistId]
+    );
+
+    await db.run(
+      `UPDATE restock_checklist_items
+       SET decision = 'rejected'
+       WHERE checklist_id = ?;`,
+      [params.checklistId]
+    );
+
+    await db.exec('COMMIT;');
+  } catch (err) {
+    await db.exec('ROLLBACK;');
+    throw err;
+  }
 
   return getRestockChecklist(db, params.checklistId);
 }

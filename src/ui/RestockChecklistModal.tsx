@@ -16,9 +16,12 @@ import {
   createDraftRestockChecklist,
   getLatestRestockChecklist,
   updateChecklistItem,
+  addChecklistItem,
+  removeChecklistItem,
   approveRestockChecklist,
   discardRestockChecklist,
 } from '../actions/restock-actions.ts';
+import { getAllProductsWithStock } from '../actions/inventory-actions.ts';
 import {
   createRestockSession,
   type RestockSessionState,
@@ -88,6 +91,26 @@ export function RestockChecklistModal({
     };
   }, [visible, loadChecklist]);
 
+  const [catalogProducts, setCatalogProducts] = useState<ProductWithStock[]>([]);
+  const [showAddPicker, setShowAddPicker] = useState(false);
+
+  const loadCatalogProducts = useCallback(async () => {
+    try {
+      const all = await getAllProductsWithStock(db);
+      setCatalogProducts(all);
+    } catch {
+      // non-fatal
+    }
+  }, [db]);
+
+  useEffect(() => {
+    if (visible) {
+      void loadCatalogProducts();
+    } else {
+      setShowAddPicker(false);
+    }
+  }, [visible, loadCatalogProducts]);
+
   const handleRunAi = async () => {
     if (!checklist || checklist.status !== 'draft') return;
     setError(null);
@@ -138,13 +161,54 @@ export function RestockChecklistModal({
     }
   };
 
+  const handleRemoveItem = async (item: RestockChecklistItem) => {
+    if (saving || checklist?.status !== 'draft') return;
+    try {
+      await removeChecklistItem(db, item.id);
+      setChecklist((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.filter((i) => i.id !== item.id),
+            }
+          : null
+      );
+    } catch {
+      Alert.alert('Aberya', 'Hindi maalis ang item.');
+    }
+  };
+
+  const handleAddItem = async (productId: string) => {
+    if (saving || !checklist || checklist.status !== 'draft') return;
+    try {
+      const added = await addChecklistItem(db, {
+        checklistId: checklist.id,
+        productId,
+        requestedQuantity: 1,
+      });
+      setChecklist((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: [...prev.items, added],
+            }
+          : null
+      );
+      setShowAddPicker(false);
+    } catch {
+      Alert.alert('Aberya', 'Hindi maidagdag ang paninda.');
+    }
+  };
+
   const handleUpdateQuantity = async (item: RestockChecklistItem, delta: number) => {
     if (saving || checklist?.status !== 'draft') return;
-    const next = Math.max(1, item.requestedQuantity + delta);
+    const currentVal = item.requestedQuantity ?? 0;
+    const next = Math.max(1, currentVal + delta);
     try {
       const updated = await updateChecklistItem(db, {
         itemId: item.id,
         requestedQuantity: next,
+        isIncluded: true,
       });
       setChecklist((prev) =>
         prev
@@ -167,6 +231,7 @@ export function RestockChecklistModal({
       const updated = await updateChecklistItem(db, {
         itemId: item.id,
         requestedQuantity: num,
+        isIncluded: true,
       });
       setChecklist((prev) =>
         prev
@@ -178,6 +243,20 @@ export function RestockChecklistModal({
       );
     } catch {
       // Ignore intermediate parse errors
+    }
+  };
+
+  const handleOpenDelivery = async (item: RestockChecklistItem) => {
+    if (!onOpenDelivery) return;
+    onClose();
+    try {
+      const all = await getAllProductsWithStock(db);
+      const product = all.find((p) => p.id === item.productId);
+      if (product) {
+        onOpenDelivery(product);
+      }
+    } catch {
+      // non-fatal
     }
   };
 
@@ -361,26 +440,36 @@ export function RestockChecklistModal({
                           </Text>
                         </View>
 
-                        {/* Checkbox for Draft */}
+                        {/* Header Actions for Draft */}
                         {checklist.status === 'draft' && (
-                          <TouchableOpacity
-                            style={styles.checkboxButton}
-                            onPress={() => handleToggleInclude(item)}
-                            accessibilityRole="checkbox"
-                            accessibilityState={{ checked: item.isIncluded }}
-                            accessibilityLabel={`Isama ang ${item.productName} sa checklist`}
-                          >
-                            <View
-                              style={[
-                                styles.checkboxBox,
-                                item.isIncluded && styles.checkboxBoxChecked,
-                              ]}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity
+                              style={styles.removeItemButton}
+                              onPress={() => void handleRemoveItem(item)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Alisin ang ${item.productName} sa checklist`}
                             >
-                              {item.isIncluded && (
-                                <Text style={styles.checkboxCheckText}>✓</Text>
-                              )}
-                            </View>
-                          </TouchableOpacity>
+                              <Text style={styles.removeItemButtonText}>Alisin</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.checkboxButton}
+                              onPress={() => void handleToggleInclude(item)}
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: item.isIncluded }}
+                              accessibilityLabel={`Isama ang ${item.productName} sa checklist`}
+                            >
+                              <View
+                                style={[
+                                  styles.checkboxBox,
+                                  item.isIncluded && styles.checkboxBoxChecked,
+                                ]}
+                              >
+                                {item.isIncluded && (
+                                  <Text style={styles.checkboxCheckText}>✓</Text>
+                                )}
+                              </View>
+                            </TouchableOpacity>
+                          </View>
                         )}
                       </View>
 
@@ -405,11 +494,13 @@ export function RestockChecklistModal({
                       {/* Quantity Controls or Delivery Button */}
                       {checklist.status === 'draft' ? (
                         <View style={styles.quantityControlsRow}>
-                          <Text style={styles.quantityLabel}>Dami na Bibilhin:</Text>
+                          <Text style={styles.quantityLabel}>
+                            {item.requestedQuantity !== null ? 'Dami na Bibilhin:' : 'Kulang ang Kasaysayan (Itakda ang Dami):'}
+                          </Text>
                           <View style={styles.counterContainer}>
                             <TouchableOpacity
                               style={styles.counterButton}
-                              onPress={() => handleUpdateQuantity(item, -1)}
+                              onPress={() => void handleUpdateQuantity(item, -1)}
                               disabled={!item.isIncluded}
                               accessibilityRole="button"
                               accessibilityLabel="Bawasan ang dami"
@@ -419,8 +510,10 @@ export function RestockChecklistModal({
 
                             <TextInput
                               style={styles.counterInput}
-                              value={String(item.requestedQuantity)}
-                              onChangeText={(text) => handleQuantityTextChange(item, text)}
+                              value={item.requestedQuantity !== null ? String(item.requestedQuantity) : ''}
+                              placeholder={item.requestedQuantity === null ? '—' : undefined}
+                              placeholderTextColor={colors.muted}
+                              onChangeText={(text) => void handleQuantityTextChange(item, text)}
                               keyboardType="number-pad"
                               editable={item.isIncluded}
                               accessibilityLabel={`Dami ng ${item.productName}`}
@@ -428,7 +521,7 @@ export function RestockChecklistModal({
 
                             <TouchableOpacity
                               style={styles.counterButton}
-                              onPress={() => handleUpdateQuantity(item, 1)}
+                              onPress={() => void handleUpdateQuantity(item, 1)}
                               disabled={!item.isIncluded}
                               accessibilityRole="button"
                               accessibilityLabel="Dagdagan ang dami"
@@ -437,28 +530,19 @@ export function RestockChecklistModal({
                             </TouchableOpacity>
                           </View>
                         </View>
-                      ) : checklist.status === 'approved' && item.isIncluded ? (
+                      ) : checklist.status === 'approved' ? (
                         <View style={styles.quantityControlsRow}>
                           <Text style={styles.quantityLabel}>
-                            Aprubadong Dami: <Text style={{ fontWeight: '800' }}>{item.requestedQuantity} {item.unit}</Text>
+                            {item.decision === 'approved' || item.isIncluded ? (
+                              <>Aprubadong Dami: <Text style={{ fontWeight: '800' }}>{item.requestedQuantity ?? 1} {item.unit}</Text></>
+                            ) : (
+                              <Text style={{ color: colors.muted, fontStyle: 'italic' }}>Tinanggihan / Hindi Isinama</Text>
+                            )}
                           </Text>
-                          {onOpenDelivery && (
+                          {onOpenDelivery && (item.decision === 'approved' || item.isIncluded) && (
                             <TouchableOpacity
                               style={styles.deliveryButton}
-                              onPress={() => {
-                                onClose();
-                                onOpenDelivery({
-                                  id: item.productId,
-                                  name: item.productName,
-                                  variant: item.variant,
-                                  unit: item.unit,
-                                  priceCentavos: 0,
-                                  createdAt: '',
-                                  updatedAt: '',
-                                  quantity: item.currentStock,
-                                  stockUpdatedAt: null,
-                                });
-                              }}
+                              onPress={() => void handleOpenDelivery(item)}
                               accessibilityRole="button"
                               accessibilityLabel={`Itala ang delivery para sa ${item.productName}`}
                             >
@@ -470,6 +554,42 @@ export function RestockChecklistModal({
                     </View>
                   );
                 })
+              )}
+
+              {/* Add item from catalog in draft mode */}
+              {checklist.status === 'draft' && (
+                <>
+                  <TouchableOpacity
+                    style={styles.addItemButton}
+                    onPress={() => setShowAddPicker((p) => !p)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Magdagdag ng produkto mula sa catalog"
+                  >
+                    <Text style={styles.addItemButtonText}>
+                      {showAddPicker ? '✕ Isara ang Catalog Picker' : '+ Magdagdag ng Paninda mula sa Catalog'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showAddPicker && (
+                    <View style={styles.pickerCard}>
+                      <Text style={styles.pickerTitle}>Piliin ang paninda na idaragdag:</Text>
+                      {catalogProducts
+                        .filter((p) => !checklist.items.some((i) => i.productId === p.id))
+                        .map((prod) => (
+                          <TouchableOpacity
+                            key={prod.id}
+                            style={styles.pickerItem}
+                            onPress={() => void handleAddItem(prod.id)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Idagdag ang ${prod.name} ${prod.variant}`}
+                          >
+                            <Text style={styles.pickerItemName}>{prod.name} ({prod.variant})</Text>
+                            <Text style={styles.pickerItemMeta}>+ Idagdag</Text>
+                          </TouchableOpacity>
+                        ))}
+                    </View>
+                  )}
+                </>
               )}
             </ScrollView>
           )}
