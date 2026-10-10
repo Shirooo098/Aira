@@ -19,3 +19,5 @@ android/
 ios/
 assets/models/*.bin
 assets/models/*.partial
+assets/models/*.partial-*
+assets/models/*.gguf

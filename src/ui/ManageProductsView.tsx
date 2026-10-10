@@ -19,6 +19,7 @@ import { AliasReviewModal } from './AliasReviewModal.tsx';
 import { CatalogDictationModal } from './CatalogDictationModal.tsx';
 import { StoreReportsView } from './StoreReportsView.tsx';
 import { NotebookReviewModal } from './NotebookReviewModal.tsx';
+import { AgentExperimentModal } from './AgentExperimentModal.tsx';
 
 interface ManageProductsViewProps {
   db: DatabaseSession;
@@ -44,6 +45,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
   const [aliasProduct, setAliasProduct] = useState<ProductWithStock | null>(null);
   const [catalogDictationOpen, setCatalogDictationOpen] = useState(false);
   const [notebookModalOpen, setNotebookModalOpen] = useState(false);
+  const [agentExperimentOpen, setAgentExperimentOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'products' | 'reports'>('products');
 
   const refreshProducts = async () => {
@@ -181,6 +183,14 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
             accessibilityLabel="I-scan ang notebook ng mga presyo"
           >
             <Text style={styles.saveButtonText}>📓 I-scan ang Notebook</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.saveButton, { flex: 0, backgroundColor: '#6d28d9', paddingHorizontal: 16 }]}
+            onPress={() => setAgentExperimentOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Subukan ang lokal na agent"
+          >
+            <Text style={styles.saveButtonText}>🧪 Subukan ang lokal na agent</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -479,6 +489,14 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
             );
             void refreshProducts();
           }}
+        />
+      )}
+
+      {agentExperimentOpen && (
+        <AgentExperimentModal
+          visible={agentExperimentOpen}
+          db={db}
+          onClose={() => setAgentExperimentOpen(false)}
         />
       )}
     </ScrollView>

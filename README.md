@@ -16,6 +16,8 @@ Ticket #5 connects explicitly reviewed Filipino price questions to the catalog a
 
 Ticket #8 adds **Idikta ang order / itama ang dami** in Sell. Review spoken or typed orders, choose unresolved products and quantities, and apply the proposed cart change. Checkout remains a separate confirmation. See [spoken cart examples, interruption rules, and phone checks](docs/TICKET-8-SPOKEN-CART.md).
 
+Ticket #16 adds a bounded **Subukan ang lokal na agent** experiment in Pamahalaan. A bundled Qwen candidate proposes a catalog lookup or a cart item; host validation and explicit owner review prevent writes. This requires a native Android build, and Oppo feasibility remains pending. See [setup, verification commands, and the device evidence checklist](docs/TICKET-16-LOCAL-AGENT.md).
+
 ## Test on the phone with Expo Go
 
 Expo Go is our primary testing workflow for the ticket #1 catalog foundation. Install an Expo Go version compatible with this project's Expo SDK 57 on the Oppo, connect the phone and computer to the same Wi-Fi network, and run:
