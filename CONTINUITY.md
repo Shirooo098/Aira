@@ -11,12 +11,14 @@
 - 2026-10-10 [CODE] DESIGN.md and .impeccable/design.json document runtime roles, source metrics and native limits. Approved reference: .impeccable/mocks/decision/friendly-price-board-approved.png.
 - 2026-10-10 [TOOL] Android SDK D:/Android/Sdk; default ANDROID_HOME points to absent C: location. Override per native build process. No connected device or installed emulator.
 - 2026-10-10 [TOOL] Theme bundle: .scratch/theme-export. No current release APK; prior native release packaging failed on Maven/Google DNS and was not retried in theme pass.
+- 2026-10-10 [TOOL] Ticket 18: Owner-approved restock checklist implemented (D2). Full isolation between approval and physical stock/purchases verified. 247/247 tests passing, typecheck clean, Android JS export verified.
 - 2026-10-10 [TOOL] UNCONFIRMED: Oppo rendering, large system text, TalkBack, speech latency/RAM/accuracy, OCR accuracy, fresh-install airplane-mode acceptance, current GitHub ticket frontier.
 
 ## Done
 - 2026-10-09 [USER] Approved 20-ticket vertical-slice plan and four workstreams; GitHub tracker Shirooo098/Aira.
 - 2026-10-10 [USER] Brand Aira — Artificial Intelligence for Retail Assistance supersedes earlier name.
-- 2026-10-10 [CODE] Source includes catalog/aliases/stock, voice lookup/cart review, cash/GCash, utang/repayments/reversals/aging, notebook proposals and reports.
+- 2026-10-10 [CODE] Source includes catalog/aliases/stock, voice lookup/cart review, cash/GCash, utang/repayments/reversals/aging, notebook proposals, reports, report explanations, and restock checklist.
+- 2026-10-10 [CODE] Ticket 18: Restock checklist with deterministic grounding, insufficient history explanation, owner editing/approval without stock modification, optional local Qwen AI prioritization, and migration 10.
 - 2026-10-10 [TOOL] Prior native repair compiled bundled Whisper/OCR debug APK, predating current-main UI; not current release/device evidence.
 - 2026-10-10 [TOOL] Impeccable context loaded once; Android guidance/craft-floor read. Mockup stage: eight portrait concepts, full provenance, Friendly Price Board approval, edited reference without Offline badge.
 - 2026-10-10 [TOOL] Antigravity roles/model verified; read-only explorer cab31509-2da0-4bd8-bf37-df511c993752 completed exit0/statusSUCCESS. Implementation worker failed after saves; root integration followed.

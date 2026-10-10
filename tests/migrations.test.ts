@@ -15,7 +15,7 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   const migrationRows = await db.getAll<{ version: number; applied_at: string }>(
     'SELECT version, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
-  assert.equal(migrationRows.length, 9);
+  assert.equal(migrationRows.length, 10);
   assert.equal(migrationRows[0]?.version, 1);
   assert.equal(migrationRows[1]?.version, 2);
   assert.equal(migrationRows[2]?.version, 3);
@@ -25,7 +25,10 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   assert.equal(migrationRows[6]?.version, 7);
   assert.equal(migrationRows[7]?.version, 8);
   assert.equal(migrationRows[8]?.version, 9);
+  assert.equal(migrationRows[9]?.version, 10);
   assert.deepEqual(await db.getAll('SELECT * FROM product_aliases;'), []);
+  assert.deepEqual(await db.getAll('SELECT * FROM restock_checklists;'), []);
+  assert.deepEqual(await db.getAll('SELECT * FROM restock_checklist_items;'), []);
 
   // Tables exist and can be queried
   const productRows = await db.getAll('SELECT * FROM products;');
@@ -63,7 +66,7 @@ test('runMigrations creates schema_migrations, products, stock_levels, inventory
   const secondRunRows = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations;'
   );
-  assert.equal(secondRunRows.length, 9);
+  assert.equal(secondRunRows.length, 10);
 });
 
 test('the aliases table rejects blank or oversized aliases and duplicate product mappings', async (t) => {
@@ -253,7 +256,7 @@ test('a newer database is refused without changing its migration history', async
   await runMigrations(db);
   sqlite.exec("INSERT INTO schema_migrations VALUES (99, 'future')");
   await assert.rejects(runMigrations(db), /newer|unsupported/i);
-  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 10);
+  assert.equal((await db.getAll('SELECT * FROM schema_migrations')).length, 11);
 });
 
 test('Migration 5 constraints validate customers, credit_entries, and sales columns', async (t) => {

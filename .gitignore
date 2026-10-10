@@ -21,3 +21,8 @@ assets/models/*.bin
 assets/models/*.partial
 assets/models/*.partial-*
 assets/models/*.gguf
+
+# Scratch & Temporary Tools
+.impeccable/
+.scratch/*
+!.scratch/tindig/

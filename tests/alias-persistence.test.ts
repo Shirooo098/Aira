@@ -106,10 +106,10 @@ test('migration v7 preserves existing v6 product, inventory, and sale history', 
   const versions = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations ORDER BY version;',
   );
-  assert.deepEqual(versions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(versions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
   // Build a v6 fixture from the latest schema, removing ticket #3 and later table/version.
-  await db.exec('DROP TABLE product_aliases; DROP TABLE IF EXISTS receipt_attachments; DELETE FROM schema_migrations WHERE version >= 7;');
+  await db.exec('DROP TABLE IF EXISTS restock_checklist_items; DROP TABLE IF EXISTS restock_checklists; DROP TABLE product_aliases; DROP TABLE IF EXISTS receipt_attachments; DELETE FROM schema_migrations WHERE version >= 7;');
   const product = await saveProduct(db, {
     name: 'Lucky Me Pancit Canton',
     variant: 'Original 80g',
@@ -135,7 +135,7 @@ test('migration v7 preserves existing v6 product, inventory, and sale history', 
   const upgradedVersions = await db.getAll<{ version: number }>(
     'SELECT version FROM schema_migrations ORDER BY version;',
   );
-  assert.deepEqual(upgradedVersions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(upgradedVersions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.deepEqual(await getProductAliases(db, product.id), []);
   const aliasTable = await db.getFirst<{ name: string }>(
     "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'product_aliases';",
@@ -157,6 +157,8 @@ async function createLegacyAliasFixture(t: TestContext) {
   // Reconstruct the previously shipped feature-branch schema: migrations 1–3
   // plus aliases at version 4, without any main-branch GCash/credit schema.
   await db.exec(`
+    DROP TABLE IF EXISTS restock_checklist_items;
+    DROP TABLE IF EXISTS restock_checklists;
     DROP TABLE IF EXISTS receipt_attachments;
     DROP TABLE repayment_allocations;
     DROP TABLE credit_repayments;
@@ -192,7 +194,7 @@ test('upgrades the legacy alias-v4 build without losing aliases, stock, or cash 
   assert.deepEqual(await getProductAliases(db, product.id), aliases);
   assert.deepEqual(await db.getAll('SELECT * FROM schema_migrations WHERE version <= 4 ORDER BY version;'), history);
   const versions = await db.getAll<{ version: number }>('SELECT version FROM schema_migrations ORDER BY version;');
-  assert.deepEqual(versions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(versions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal((await lookupProduct(db, 'maliit na coke')).kind, 'exact');
   assert.deepEqual(await db.getAll('SELECT * FROM pending_gcash_drafts;'), []);
   assert.deepEqual(await db.getAll('SELECT * FROM customers;'), []);

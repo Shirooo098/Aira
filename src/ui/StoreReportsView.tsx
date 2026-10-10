@@ -20,6 +20,9 @@ import {
 } from '../domain/reports.ts';
 import { formatCentavos } from '../domain/money.ts';
 import { ReportExplanationCard } from './ReportExplanationCard.tsx';
+import { RestockChecklistModal } from './RestockChecklistModal.tsx';
+import { StockActionModal } from './StockActionModal.tsx';
+import type { ProductWithStock } from '../types.ts';
 
 interface StoreReportsViewProps {
   db: DatabaseSession;
@@ -30,6 +33,8 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriodKey>('today');
   const [selectedPriorOffset, setSelectedPriorOffset] = useState<number>(1);
   const [showPriorMonthsPicker, setShowPriorMonthsPicker] = useState(false);
+  const [restockModalOpen, setRestockModalOpen] = useState(false);
+  const [stockModalProduct, setStockModalProduct] = useState<ProductWithStock | null>(null);
 
   const [report, setReport] = useState<StoreReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -241,6 +246,46 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
 
               {/* KPI Cards Grid */}
               <ReportExplanationCard report={report} />
+
+              {/* Restock Suggestions Entry Point */}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colors.lilac,
+                  borderColor: colors.outline,
+                  borderWidth: 1,
+                  borderRadius: radii.field,
+                  padding: 12,
+                  marginBottom: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+                onPress={() => setRestockModalOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Buksan ang restock checklist para sa napiling panahon"
+              >
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primaryStrong }}>
+                    📋 Restock Checklist
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.primaryMuted, marginTop: 2 }}>
+                    Suriin ang mga panindang kailangang i-restock batay sa ulat na ito.
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    backgroundColor: colors.primary,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                  }}
+                >
+                  <Text style={{ color: colors.surface, fontSize: 12, fontWeight: '700' }}>
+                    Buksan
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
               <View style={styles.kpiGrid}>
                 {/* 1. Net Sales Card */}
                 <View style={[styles.kpiCard, styles.kpiCardHighlight]}>
@@ -348,6 +393,27 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
             </>
           )}
         </ScrollView>
+      )}
+
+      <RestockChecklistModal
+        db={db}
+        visible={restockModalOpen}
+        onClose={() => setRestockModalOpen(false)}
+        periodKey={selectedPeriod}
+        onOpenDelivery={(product) => setStockModalProduct(product)}
+      />
+
+      {stockModalProduct && (
+        <StockActionModal
+          db={db}
+          product={stockModalProduct}
+          mode="add_delivery"
+          onClose={() => setStockModalProduct(null)}
+          onSuccess={() => {
+            setStockModalProduct(null);
+            void loadReport();
+          }}
+        />
       )}
     </View>
   );

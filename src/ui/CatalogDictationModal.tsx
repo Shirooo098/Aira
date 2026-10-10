@@ -17,6 +17,7 @@ import { createCatalogDraftSession, selectCatalogProduct } from '../domain/catal
 import {
   emptyCatalogChangeFields,
   extractCatalogTranscript,
+  mergeCatalogChangeFields,
   type CatalogChangeFields,
   type CatalogChangeKind,
 } from '../domain/catalog-dictation.ts';
@@ -131,9 +132,19 @@ export function CatalogDictationModal({
     invalidateDraft();
     setTypedTranscript(text);
     const extracted = extractCatalogTranscript(text, fields.kind);
-    setFields(extracted.fields);
-    setWarnings(extracted.warnings);
-  }, [fields.kind, invalidateDraft, session]);
+    if (
+      fields.name &&
+      extracted.fields.kind === fields.kind &&
+      (!extracted.fields.name || extracted.fields.name.toLowerCase() === fields.name.toLowerCase())
+    ) {
+      const merged = mergeCatalogChangeFields(fields, extracted.fields);
+      setFields(merged.fields);
+      setWarnings(merged.warnings);
+    } else {
+      setFields(extracted.fields);
+      setWarnings(extracted.warnings);
+    }
+  }, [fields, invalidateDraft, session]);
 
   const changeIntent = (kind: CatalogChangeKind) => {
     if (kind === fields.kind || state.status === 'saving') return;
@@ -308,6 +319,17 @@ export function CatalogDictationModal({
                 {warnings.map((warning, index) => (
                   <Text key={`${index}-${warning}`} style={styles.warningText}>• {warning}</Text>
                 ))}
+                {selectedKind === 'new_product' && !fields.variant && fields.name ? (
+                  <TouchableOpacity
+                    style={styles.quickResolveButton}
+                    onPress={() => changeField('variant', 'Regular')}
+                    disabled={!editable}
+                    accessibilityRole="button"
+                    accessibilityLabel="Itakda ang variant bilang Regular"
+                  >
+                    <Text style={styles.quickResolveButtonText}>Itakda ang variant bilang “Regular”</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             )}
 
@@ -325,9 +347,33 @@ export function CatalogDictationModal({
                   label="Variant o laki *"
                   value={fields.variant}
                   onChangeText={(value) => changeField('variant', value)}
-                  placeholder="hal. Chicken, 60g"
+                  placeholder="hal. Chicken, 60g, Regular"
                   editable={editable}
                 />
+                <View style={styles.variantChipsRow}>
+                  {['Regular', 'Maliit', 'Malaki', 'Solo', '1.5L', '60g', '33g'].map((chip) => (
+                    <TouchableOpacity
+                      key={chip}
+                      style={[
+                        styles.variantChip,
+                        fields.variant.toLowerCase() === chip.toLowerCase() && styles.variantChipSelected,
+                      ]}
+                      onPress={() => changeField('variant', chip)}
+                      disabled={!editable}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Piliin ang variant na ${chip}`}
+                    >
+                      <Text
+                        style={[
+                          styles.variantChipText,
+                          fields.variant.toLowerCase() === chip.toLowerCase() && styles.variantChipTextSelected,
+                        ]}
+                      >
+                        {chip}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
                 <CatalogField
                   label="Unit na ibinebenta *"
                   value={fields.unit}

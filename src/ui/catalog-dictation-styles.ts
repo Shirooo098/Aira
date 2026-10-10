@@ -358,4 +358,45 @@ export const catalogDictationStyles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.55,
   },
+  variantChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  variantChip: {
+    backgroundColor: colors.surfaceSoft,
+    borderColor: colors.outline,
+    borderWidth: 1,
+    borderRadius: radii.button,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  variantChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  variantChipText: {
+    color: colors.primaryMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  variantChipTextSelected: {
+    color: colors.surface,
+    fontWeight: '700',
+  },
+  quickResolveButton: {
+    marginTop: 8,
+    backgroundColor: colors.accent,
+    borderRadius: radii.button,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  quickResolveButtonText: {
+    color: colors.surface,
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
