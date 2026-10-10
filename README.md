@@ -4,6 +4,8 @@ Artificial Intelligence for Retail Assistance — an offline, Filipino-speaking 
 
 Framework: Expo with React Native and TypeScript. Development and phone testing: Expo Go.
 
+Ticket #17 adds **Ipaliwanag ang napiling ulat** in Ulat, using the bundled local model and an inspectable report breakdown. See [grounding rules and pending phone verification](docs/TICKET-17-REPORT-EXPLANATION.md).
+
 The app includes catalog and typed price lookup (#1), owner-confirmed aliases (#3), inventory (#4), cash and GCash sales (#7/#9), and customer credit and repayments (#11/#12). For aliases, open Pamahalaan, tap Bansag on a product, review the exact variant/unit, and explicitly confirm. Approved nicknames work in Alamin ang Presyo; conflicting mappings show product choices.
 
 See [the alias workflow and acceptance checklist](docs/TICKET-3-ALIASES.md). Alias behavior does not require Qwen or a desktop model server.
