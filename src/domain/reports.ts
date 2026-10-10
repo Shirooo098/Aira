@@ -32,6 +32,12 @@ export interface StoreReport {
   cancelledSalesCentavos: number;
   salesCount: number;
   cancelledSalesCount: number;
+  collectionBreakdown: {
+    cashSalesCentavos: number;
+    cashRepaymentsCentavos: number;
+    gcashSalesCentavos: number;
+    gcashRepaymentsCentavos: number;
+  };
   cashCollectionsCentavos: number;
   gcashCollectionsCentavos: number;
   totalCollectionsCentavos: number;

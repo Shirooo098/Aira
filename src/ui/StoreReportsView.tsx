@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import {
   type PriorMonthOption,
 } from '../domain/reports.ts';
 import { formatCentavos } from '../domain/money.ts';
+import { ReportExplanationCard } from './ReportExplanationCard.tsx';
 
 interface StoreReportsViewProps {
   db: DatabaseSession;
@@ -32,38 +33,52 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
   const [report, setReport] = useState<StoreReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestRevision = useRef(0);
 
   const priorMonths = getAvailablePriorMonths();
 
   const loadReport = useCallback(async () => {
+    const revision = ++requestRevision.current;
     try {
       setLoading(true);
       setError(null);
+      setReport(null);
       const data = await getStoreReport(db, {
         periodKey: selectedPeriod,
         selectedPriorMonthOffset: selectedPriorOffset,
       });
-      setReport(data);
+      if (revision === requestRevision.current) setReport(data);
     } catch (err) {
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.error('[StoreReportsView] Error loading report:', err);
       }
-      setError('Hindi ma-load ang ulat ng tindahan. Pakisubukan muli.');
+      if (revision === requestRevision.current) setError('Hindi ma-load ang ulat ng tindahan. Pakisubukan muli.');
     } finally {
-      setLoading(false);
+      if (revision === requestRevision.current) setLoading(false);
     }
   }, [db, selectedPeriod, selectedPriorOffset]);
 
   useEffect(() => {
     void loadReport();
+    return () => { requestRevision.current += 1; };
   }, [loadReport]);
 
   const handleSelectPeriod = (key: ReportPeriodKey) => {
+    if (key !== selectedPeriod) {
+      requestRevision.current += 1;
+      setReport(null);
+      setLoading(true);
+    }
     setSelectedPeriod(key);
     setShowPriorMonthsPicker(false);
   };
 
   const handleSelectPriorMonth = (offset: number) => {
+    if (selectedPeriod !== 'prior_month' || offset !== selectedPriorOffset) {
+      requestRevision.current += 1;
+      setReport(null);
+      setLoading(true);
+    }
     setSelectedPriorOffset(offset);
     setSelectedPeriod('prior_month');
     setShowPriorMonthsPicker(false);
@@ -224,6 +239,7 @@ export function StoreReportsView({ db, onBack }: StoreReportsViewProps): React.J
               </View>
 
               {/* KPI Cards Grid */}
+              <ReportExplanationCard report={report} />
               <View style={styles.kpiGrid}>
                 {/* 1. Net Sales Card */}
                 <View style={[styles.kpiCard, styles.kpiCardHighlight]}>

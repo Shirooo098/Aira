@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import type { AgentRuntime } from './agent-session.ts';
 import type { AgentPrompt } from './agent-contract.ts';
+import { REPORT_EXPLANATION_SCHEMA } from '../domain/report-explanation.ts';
 
 const MODEL_ASSET_PATH = 'models/aira-qwen.gguf';
 const MODEL_FILE_NAME = 'aira-qwen-9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031.gguf';
@@ -78,6 +79,15 @@ function canceledError(): Error {
 
 /** Local-only llama.rn adapter. It never accepts a model path or network endpoint from callers. */
 export function createLlamaAgentAdapter(): AgentRuntime {
+  return createStructuredAdapter(toolRequestSchema, MODEL_CONTEXT_TOKENS);
+}
+
+/** Reuse the bundled model and exclusive lease for grounded report explanation. */
+export function createLlamaReportAdapter(): AgentRuntime {
+  return createStructuredAdapter(REPORT_EXPLANATION_SCHEMA, 2048);
+}
+
+function createStructuredAdapter(schema: Record<string, unknown>, contextTokens: number): AgentRuntime {
   const modelLeaseToken = Symbol('aira-local-agent-model-session');
   let context: LlamaContext | null = null;
   let initializing: Promise<void> | null = null;
@@ -126,7 +136,7 @@ export function createLlamaAgentAdapter(): AgentRuntime {
       const loaded = await llama.initLlama({
         model,
         is_model_asset: false,
-        n_ctx: MODEL_CONTEXT_TOKENS,
+        n_ctx: contextTokens,
         n_threads: MODEL_CPU_THREADS,
         use_mmap: true,
       });
@@ -180,7 +190,7 @@ export function createLlamaAgentAdapter(): AgentRuntime {
         grammar_lazy: false,
         response_format: {
           type: 'json_schema',
-          json_schema: { schema: toolRequestSchema, strict: true },
+          json_schema: { schema, strict: true },
         },
       });
     })();
