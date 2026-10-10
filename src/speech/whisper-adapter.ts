@@ -84,9 +84,13 @@ export function createWhisperAdapter(): SpeechAdapter {
               if (captureFailure) throw captureFailure;
               if (!samples) throw speechError('empty_audio', 'Walang narinig na boses.');
               const pcm = joinPcm16(chunks);
-              chunks = [];
               if (!hasAudiblePcm16(pcm)) throw speechError('empty_audio', 'Walang malinaw na boses.');
-              task = context!.transcribeData(pcm, { language: 'tl', translate: false, maxThreads: 4 });
+              task = context!.transcribeData(pcm, {
+                language: 'tl',
+                translate: false,
+                maxThreads: 4,
+                prompt: 'Tindahan, sari-sari store, paninda, presyo, piraso, bote, pack, sachet, Lucky Me, Coca-Cola, Safeguard, Bear Brand, pesos, piso, bente, kinse, sampu.',
+              });
               const result = await task.promise;
               if (cancelled || result.isAborted) return '';
               return result.result.trim();

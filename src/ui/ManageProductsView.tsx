@@ -21,6 +21,7 @@ import { CatalogDictationModal } from './CatalogDictationModal.tsx';
 import { StoreReportsView } from './StoreReportsView.tsx';
 import { NotebookReviewModal } from './NotebookReviewModal.tsx';
 import { AgentExperimentModal } from './AgentExperimentModal.tsx';
+import { RestockChecklistModal } from './RestockChecklistModal.tsx';
 
 interface ManageProductsViewProps {
   db: DatabaseSession;
@@ -47,6 +48,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
   const [catalogDictationOpen, setCatalogDictationOpen] = useState(false);
   const [notebookModalOpen, setNotebookModalOpen] = useState(false);
   const [agentExperimentOpen, setAgentExperimentOpen] = useState(false);
+  const [restockModalOpen, setRestockModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'products' | 'reports'>('products');
 
   const refreshProducts = async () => {
@@ -175,7 +177,7 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
             accessibilityRole="button"
             accessibilityLabel="Idikta ang pagbabago sa paninda"
           >
-            <Text style={styles.saveButtonText}>Idikta ang Paninda</Text>
+            <Text style={styles.saveButtonText}>🎙️ Idikta ang Paninda (Boses)</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.saveButton, { flex: 0, backgroundColor: colors.primary, paddingHorizontal: 16 }]}
@@ -193,11 +195,29 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
           >
             <Text style={styles.saveButtonText}>🧪 Subukan ang lokal na agent</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.saveButton, { flex: 0, backgroundColor: colors.primary, paddingHorizontal: 16 }]}
+            onPress={() => setRestockModalOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Maghanda ng restock checklist"
+          >
+            <Text style={styles.saveButtonText}>📋 Restock Checklist</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.formCard}>
-        <Text style={styles.sectionHeader}>Magdagdag ng Bagong Produkto</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+          <Text style={styles.sectionHeader}>Magdagdag ng Bagong Produkto</Text>
+          <TouchableOpacity
+            style={[styles.saveButton, { flex: 0, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.accent }]}
+            onPress={() => setCatalogDictationOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Idikta sa boses ang bagong produkto"
+          >
+            <Text style={[styles.saveButtonText, { fontSize: 13 }]}>🎙️ Idikta sa Boses</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.fieldLabel}>Pangalan ng Produkto *</Text>
         <TextInput
@@ -498,6 +518,19 @@ export function ManageProductsView({ db }: ManageProductsViewProps): React.JSX.E
           visible={agentExperimentOpen}
           db={db}
           onClose={() => setAgentExperimentOpen(false)}
+        />
+      )}
+
+      {restockModalOpen && (
+        <RestockChecklistModal
+          visible={restockModalOpen}
+          db={db}
+          onClose={() => setRestockModalOpen(false)}
+          onOpenDelivery={(product) => {
+            setRestockModalOpen(false);
+            setSelectedProduct(product);
+            setActiveStockMode('add_delivery');
+          }}
         />
       )}
     </ScrollView>

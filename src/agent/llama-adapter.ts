@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import type { AgentRuntime } from './agent-session.ts';
 import type { AgentPrompt } from './agent-contract.ts';
 import { REPORT_EXPLANATION_SCHEMA } from '../domain/report-explanation.ts';
+import { RESTOCK_SUGGESTIONS_SCHEMA } from '../domain/restock.ts';
 
 const MODEL_ASSET_PATH = 'models/aira-qwen.gguf';
 const MODEL_FILE_NAME = 'aira-qwen-9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031.gguf';
@@ -85,6 +86,11 @@ export function createLlamaAgentAdapter(): AgentRuntime {
 /** Reuse the bundled model and exclusive lease for grounded report explanation. */
 export function createLlamaReportAdapter(): AgentRuntime {
   return createStructuredAdapter(REPORT_EXPLANATION_SCHEMA, 2048);
+}
+
+/** Reuse the bundled model and exclusive lease for grounded restock prioritization. */
+export function createLlamaRestockAdapter(): AgentRuntime {
+  return createStructuredAdapter(RESTOCK_SUGGESTIONS_SCHEMA, 2048);
 }
 
 function createStructuredAdapter(schema: Record<string, unknown>, contextTokens: number): AgentRuntime {
