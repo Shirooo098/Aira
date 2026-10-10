@@ -14,7 +14,10 @@
     "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
     "speech:model": "node scripts/prepare-speech-model.mjs",
     "speech:prebuild": "npx expo prebuild --platform android",
-    "speech:start": "expo start --dev-client --lan"
+    "speech:start": "expo start --dev-client --lan",
+    "agent:model": "node scripts/prepare-agent-model.mjs",
+    "agent:prebuild": "expo prebuild --platform android",
+    "agent:start": "expo start --dev-client --lan"
   },
   "dependencies": {
     "@react-native-ml-kit/text-recognition": "2.0.0",
@@ -29,7 +32,8 @@
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
-    "whisper.rn": "0.7.4"
+    "whisper.rn": "0.7.4",
+    "llama.rn": "0.12.9"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
