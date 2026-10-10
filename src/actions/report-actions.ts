@@ -96,9 +96,6 @@ export async function getStoreReport(
        AND created_at >= ? AND created_at <= ?;`,
     [startIso, endIso]
   );
-  const cashCollectionsCentavos =
-    (cashSalesRows[0]?.val ?? 0) + (cashRepayRows[0]?.val ?? 0);
-
   // 3. GCash collections: active GCash sales + non-reversed GCash repayments
   const gcashSalesRows = await db.getAll<SingleValueRow>(
     `SELECT COALESCE(SUM(
@@ -121,8 +118,16 @@ export async function getStoreReport(
        AND created_at >= ? AND created_at <= ?;`,
     [startIso, endIso]
   );
+  const collectionBreakdown = {
+    cashSalesCentavos: cashSalesRows[0]?.val ?? 0,
+    cashRepaymentsCentavos: cashRepayRows[0]?.val ?? 0,
+    gcashSalesCentavos: gcashSalesRows[0]?.val ?? 0,
+    gcashRepaymentsCentavos: gcashRepayRows[0]?.val ?? 0,
+  };
+  const cashCollectionsCentavos =
+    collectionBreakdown.cashSalesCentavos + collectionBreakdown.cashRepaymentsCentavos;
   const gcashCollectionsCentavos =
-    (gcashSalesRows[0]?.val ?? 0) + (gcashRepayRows[0]?.val ?? 0);
+    collectionBreakdown.gcashSalesCentavos + collectionBreakdown.gcashRepaymentsCentavos;
 
   const totalCollectionsCentavos =
     cashCollectionsCentavos + gcashCollectionsCentavos;
@@ -180,6 +185,7 @@ export async function getStoreReport(
     cancelledSalesCentavos: salesMetrics.cancelled_sales_centavos,
     salesCount: salesMetrics.sales_count,
     cancelledSalesCount: salesMetrics.cancelled_sales_count,
+    collectionBreakdown,
     cashCollectionsCentavos,
     gcashCollectionsCentavos,
     totalCollectionsCentavos,
