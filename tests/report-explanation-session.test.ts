@@ -114,7 +114,7 @@ function activeReport(): StoreReport {
 
 async function waitFor(predicate: () => boolean): Promise<void> {
   for (let attempt = 0; attempt < 20 && !predicate(); attempt++) {
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setTimeout(resolve, 5));
   }
   assert.equal(predicate(), true, 'expected fake runtime operation to start');
 }

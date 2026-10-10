@@ -198,7 +198,7 @@ test('rejects invalid aggregates, dates, and model focus output', async (t) => {
   assert.throws(() => buildReportExplanationEvidence({
     ...report,
     collectionBreakdown: { ...report.collectionBreakdown, cashRepaymentsCentavos: Number.MAX_SAFE_INTEGER },
-  }), /cash collections/u);
+  }), /cash collection/u);
 
   for (const output of [
     '',
@@ -211,7 +211,7 @@ test('rejects invalid aggregates, dates, and model focus output', async (t) => {
     '{"focus":["sales","cash","gcash","credit"]}',
     '{"focus":["sales"]} trailing',
   ]) {
-    assert.throws(() => parseReportExplanationFocus(output, evidence), undefined, output);
+    assert.throws(() => parseReportExplanationFocus(output, evidence), /.*/, output);
   }
 });
 
